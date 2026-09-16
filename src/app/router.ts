@@ -4,17 +4,13 @@ interface IRoute {
 }
 
 export class Router {
-  private readonly routes: Record<string, () => HTMLElement>;
-  private appRoot: HTMLElement | null = null;
+  private readonly routes: Record<string, () => HTMLElement> = {};
+  private appRoot?: HTMLElement;
 
   constructor(routes: IRoute[]) {
-    this.routes = routes.reduce(
-      (accumulator, route) => {
-        accumulator[route.path] = route.render;
-        return accumulator;
-      },
-      {} as Record<string, () => HTMLElement>
-    );
+    for (const route of routes) {
+      this.routes[route.path] = route.render;
+    }
 
     window.addEventListener('popstate', () => this.handleRoute());
   }

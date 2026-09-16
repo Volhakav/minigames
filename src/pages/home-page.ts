@@ -6,8 +6,7 @@ export const createHomePage = (): HTMLElement => {
   title.textContent = 'Welcome to Mini-Games App';
 
   const description: HTMLParagraphElement = document.createElement('p');
-  description.textContent =
-    'Dynamic SPA application generated fully with TypeScript.';
+  description.textContent = 'Dynamic SPA application generated fully with TypeScript.';
 
   container.append(title, description);
   return container;
