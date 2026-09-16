@@ -4,7 +4,7 @@ import { createHomePage } from './pages/home-page';
 import { createNotFoundPage } from './pages/not-found-page';
 
 const appInit = (): void => {
-  let rootContainer = document.getElementById('app') as HTMLDivElement;
+  let rootContainer = document.querySelector('#app') as HTMLDivElement;
   
   if (!rootContainer) {
     rootContainer = document.createElement('div');
