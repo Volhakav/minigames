@@ -1,13 +1,16 @@
+import { createHeader } from '../components/header';
+
 export const createHomePage = (): HTMLElement => {
-  const container: HTMLElement = document.createElement('main');
+  const container = document.createElement('div');
   container.className = 'page-home';
 
-  const title: HTMLHeadingElement = document.createElement('h1');
+  const header = createHeader();
+
+  const main = document.createElement('main');
+  const title = document.createElement('h1');
   title.textContent = 'Welcome to Mini-Games App';
+  main.append(title);
 
-  const description: HTMLParagraphElement = document.createElement('p');
-  description.textContent = 'Dynamic SPA application generated fully with TypeScript.';
-
-  container.append(title, description);
+  container.append(header, main);
   return container;
 };

@@ -1,0 +1,157 @@
+@use '../abstract/tokens' as *;
+
+.header {
+  width: 100%;
+  background-color: $color-bg;
+  border-bottom: 2px solid $color-on-primary;
+
+  &__container {
+    max-width: 1920px;
+    margin: 0 auto;
+    height: 80px;
+    padding: 0 $size-4;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__logo {
+    display: flex;
+    align-items: center;
+    gap: $size-1;
+    text-decoration: none;
+    color: $color-on-primary;
+
+    &-icon {
+      width: 32px;
+      height: 32px;
+    }
+
+    &-text {
+      font-family: $font-family-base;
+      font-size: $font-headline-small;
+      font-weight: $font-weight-bold;
+    }
+  }
+
+  &__nav {
+    &-list {
+      display: flex;
+      align-items: center;
+      gap: $size-4;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    &-link {
+      font-family: $font-family-base;
+      font-size: $font-body-medium;
+      font-weight: $font-weight-medium;
+      color: $color-on-bg-low;
+      text-decoration: none;
+      transition: color 0.2s ease;
+
+      &:hover,
+      &--active {
+        color: $color-on-primary;
+        font-weight: $font-weight-bold;
+      }
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: $size-2;
+  }
+
+  &__btn {
+    font-family: $font-family-base;
+    font-size: $font-body-medium;
+    font-weight: $font-weight-bold;
+    border-radius: $corner-small;
+    cursor: pointer;
+
+    &--login {
+      padding: 10px 20px;
+      background: transparent;
+      border: 2px solid $color-on-primary;
+      color: $color-on-primary;
+
+      &:hover {
+        background-color: $color-secondary;
+      }
+    }
+
+    &--signup {
+      padding: 10px 20px;
+      background-color: $color-primary;
+      border: 2px solid $color-on-primary;
+      color: $color-on-primary;
+      box-shadow: $shadow-level-1;
+
+      &:hover {
+        background-color: $color-primary-low;
+      }
+    }
+  }
+
+  &__burger {
+    display: none;
+    box-sizing: border-box;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    gap: 3px;
+    width: 32px;
+    height: 32px;
+    background-color: $color-white;
+    border: 2px solid $color-on-primary;
+    border-radius: $corner-small;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: $color-secondary;
+    }
+
+    &-line {
+      width: 16px;
+      height: 2px;
+      background-color: $color-on-primary;
+      border-radius: 1px;
+      display: block;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    &__container {
+      height: 64px;
+      padding: 0 $size-2;
+    }
+
+    &__nav {
+      display: none;
+    }
+
+    &__btn--login {
+      display: none;
+    }
+
+    &__burger {
+      display: flex;
+    }
+  }
+}
+
+@media (max-width: 375px) {
+  .header {
+    &__btn--signup {
+      display: none;
+    }
+  }
+}

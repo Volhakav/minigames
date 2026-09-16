@@ -4,9 +4,13 @@ import { createHomePage } from './pages/home-page';
 import { createNotFoundPage } from './pages/not-found-page';
 
 const appInit = (): void => {
-  const rootContainer: HTMLDivElement = document.createElement('div');
-  rootContainer.id = 'app';
-  document.body.append(rootContainer);
+  let rootContainer = document.getElementById('app') as HTMLDivElement;
+  
+  if (!rootContainer) {
+    rootContainer = document.createElement('div');
+    rootContainer.id = 'app';
+    document.body.append(rootContainer);
+  }
 
   const router: Router = new Router([
     { path: '/', render: createHomePage },
@@ -16,4 +20,4 @@ const appInit = (): void => {
   router.init(rootContainer);
 };
 
-document.addEventListener('DOMContentLoaded', appInit);
+appInit();
