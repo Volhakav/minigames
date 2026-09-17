@@ -7,7 +7,7 @@ export const createHeader = (): HTMLElement => {
   const container = document.createElement('div');
   container.className = 'header__container';
 
-  // --- Main Desktop Header Elements ---
+  // --- Logo ---
   const logo = document.createElement('a');
   logo.href = '/';
   logo.className = 'header__logo';
@@ -23,7 +23,7 @@ export const createHeader = (): HTMLElement => {
 
   logo.append(logoImg, logoText);
 
-  // Desktop Nav
+  // --- Desktop Nav ---
   const nav = document.createElement('nav');
   nav.className = 'header__nav';
 
@@ -52,7 +52,7 @@ export const createHeader = (): HTMLElement => {
 
   nav.append(navList);
 
-  // Desktop Actions
+  // --- Desktop Actions ---
   const actions = document.createElement('div');
   actions.className = 'header__actions';
 
@@ -68,7 +68,7 @@ export const createHeader = (): HTMLElement => {
 
   actions.append(logInBtn, signUpBtn);
 
-  // Trigger Burger Button
+  // --- Burger Button ---
   const burgerBtn = document.createElement('button');
   burgerBtn.type = 'button';
   burgerBtn.className = 'header__burger';
@@ -80,7 +80,12 @@ export const createHeader = (): HTMLElement => {
     burgerBtn.append(line);
   }
 
-  // --- Mobile Overlay Element ---
+  // ОБЕРТКА ДЛЯ ПРАВОГО БЛОКА КНОПОК И БУРГЕРА
+  const rightControls = document.createElement('div');
+  rightControls.className = 'header__right-controls';
+  rightControls.append(actions, burgerBtn);
+
+  // --- Mobile Overlay ---
   const mobileOverlay = document.createElement('div');
   mobileOverlay.className = 'header__mobile-overlay';
 
@@ -110,10 +115,9 @@ export const createHeader = (): HTMLElement => {
   const mobileSignUpBtn = signUpBtn.cloneNode(true) as HTMLButtonElement;
 
   mobileActions.append(mobileLogInBtn, mobileSignUpBtn);
-
   mobileOverlay.append(overlayTop, mobileNavList, mobileActions);
 
-  // --- Handlers & State Management ---
+  // --- Handlers ---
   const closeMenu = (): void => {
     mobileOverlay.classList.remove('header__mobile-overlay--active');
     document.body.classList.remove('no-scroll');
@@ -127,9 +131,7 @@ export const createHeader = (): HTMLElement => {
   };
 
   const handleEscClose = (event: KeyboardEvent): void => {
-    if (event.key === 'Escape') {
-      closeMenu();
-    }
+    if (event.key === 'Escape') closeMenu();
   };
 
   burgerBtn.addEventListener('click', openMenu);
@@ -158,7 +160,7 @@ export const createHeader = (): HTMLElement => {
   signUpBtn.addEventListener('click', handleSignUpClick);
   mobileSignUpBtn.addEventListener('click', handleSignUpClick);
 
-  container.append(logo, nav, actions, burgerBtn);
+  container.append(logo, nav, rightControls);
   header.append(container, mobileOverlay);
 
   return header;
