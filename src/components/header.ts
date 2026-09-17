@@ -7,7 +7,7 @@ export const createHeader = (): HTMLElement => {
   const container = document.createElement('div');
   container.className = 'header__container';
 
-  // Logo
+  // --- Main Desktop Header Elements ---
   const logo = document.createElement('a');
   logo.href = '/';
   logo.className = 'header__logo';
@@ -23,7 +23,7 @@ export const createHeader = (): HTMLElement => {
 
   logo.append(logoImg, logoText);
 
-  // Navigation
+  // Desktop Nav
   const nav = document.createElement('nav');
   nav.className = 'header__nav';
 
@@ -52,7 +52,7 @@ export const createHeader = (): HTMLElement => {
 
   nav.append(navList);
 
-  // Actions (Buttons)
+  // Desktop Actions
   const actions = document.createElement('div');
   actions.className = 'header__actions';
 
@@ -66,7 +66,9 @@ export const createHeader = (): HTMLElement => {
   signUpBtn.className = 'header__btn header__btn--signup';
   signUpBtn.textContent = 'Sign Up';
 
-  // Burger Menu Button with CSS-generated lines
+  actions.append(logInBtn, signUpBtn);
+
+  // Trigger Burger Button
   const burgerBtn = document.createElement('button');
   burgerBtn.type = 'button';
   burgerBtn.className = 'header__burger';
@@ -78,20 +80,86 @@ export const createHeader = (): HTMLElement => {
     burgerBtn.append(line);
   }
 
-  // Redirect logic
-  logInBtn.addEventListener('click', () => {
+  // --- Mobile Overlay Element ---
+  const mobileOverlay = document.createElement('div');
+  mobileOverlay.className = 'header__mobile-overlay';
+
+  const overlayTop = document.createElement('div');
+  overlayTop.className = 'header__mobile-top';
+
+  const mobileLogo = logo.cloneNode(true) as HTMLElement;
+
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'header__mobile-close';
+  closeBtn.setAttribute('aria-label', 'Close menu');
+
+  const closeIcon = document.createElement('span');
+  closeIcon.className = 'header__mobile-close-icon';
+  closeIcon.textContent = '✕';
+  closeBtn.append(closeIcon);
+
+  overlayTop.append(mobileLogo, closeBtn);
+
+  const mobileNavList = navList.cloneNode(true) as HTMLElement;
+
+  const mobileActions = document.createElement('div');
+  mobileActions.className = 'header__mobile-actions';
+
+  const mobileLogInBtn = logInBtn.cloneNode(true) as HTMLButtonElement;
+  const mobileSignUpBtn = signUpBtn.cloneNode(true) as HTMLButtonElement;
+
+  mobileActions.append(mobileLogInBtn, mobileSignUpBtn);
+
+  mobileOverlay.append(overlayTop, mobileNavList, mobileActions);
+
+  // --- Handlers & State Management ---
+  const closeMenu = (): void => {
+    mobileOverlay.classList.remove('header__mobile-overlay--active');
+    document.body.classList.remove('no-scroll');
+    document.removeEventListener('keydown', handleEscClose);
+  };
+
+  const openMenu = (): void => {
+    mobileOverlay.classList.add('header__mobile-overlay--active');
+    document.body.classList.add('no-scroll');
+    document.addEventListener('keydown', handleEscClose);
+  };
+
+  const handleEscClose = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape') {
+      closeMenu();
+    }
+  };
+
+  burgerBtn.addEventListener('click', openMenu);
+  closeBtn.addEventListener('click', closeMenu);
+
+  const mobileNavLinks = mobileNavList.querySelectorAll('.header__nav-link');
+  for (const link of mobileNavLinks) {
+    link.addEventListener('click', closeMenu);
+  }
+
+  const handleLoginClick = (): void => {
+    closeMenu();
     window.history.pushState({}, '', '/login');
     window.dispatchEvent(new Event('popstate'));
-  });
+  };
 
-  signUpBtn.addEventListener('click', () => {
+  const handleSignUpClick = (): void => {
+    closeMenu();
     window.history.pushState({}, '', '/register');
     window.dispatchEvent(new Event('popstate'));
-  });
+  };
 
-  actions.append(logInBtn, signUpBtn, burgerBtn);
-  container.append(logo, nav, actions);
-  header.append(container);
+  logInBtn.addEventListener('click', handleLoginClick);
+  mobileLogInBtn.addEventListener('click', handleLoginClick);
+
+  signUpBtn.addEventListener('click', handleSignUpClick);
+  mobileSignUpBtn.addEventListener('click', handleSignUpClick);
+
+  container.append(logo, nav, actions, burgerBtn);
+  header.append(container, mobileOverlay);
 
   return header;
 };
