@@ -1,4 +1,5 @@
 import { createHeader } from '../components/header';
+import { createHero } from '../components/hero'; 
 
 export const createHomePage = (): HTMLElement => {
   const container = document.createElement('div');
@@ -7,9 +8,9 @@ export const createHomePage = (): HTMLElement => {
   const header = createHeader();
 
   const main = document.createElement('main');
-  const title = document.createElement('h1');
-  title.textContent = 'Welcome to Mini-Games App';
-  main.append(title);
+  
+  const hero = createHero();
+  main.append(hero);
 
   container.append(header, main);
   return container;

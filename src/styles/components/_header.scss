@@ -65,6 +65,13 @@ body.no-scroll {
     }
   }
 
+  // Новый контейнер правых элементов
+  &__right-controls {
+    display: flex;
+    align-items: center;
+    gap: $size-2;
+  }
+
   &__actions {
     display: flex;
     align-items: center;
@@ -125,51 +132,47 @@ body.no-scroll {
     }
   }
 
-  // --- Mobile Fullscreen Overlay ---
+  // Mobile Fullscreen Overlay
   &__mobile-overlay {
-    display: none;
+    display: flex;
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    background-color: #18152e;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px 20px 24px 20px;
+    z-index: 9999;
+    visibility: hidden;
+    transition: right 0.3s ease-in-out, visibility 0.3s ease-in-out;
 
-    @media (max-width: 768px) {
-      display: flex;
-      position: fixed;
-      top: 0;
-      right: -100%;
-      width: 100vw;
-      height: 100vh;
-      box-sizing: border-box;
-      background-color: #18152e; // Темно-синий фон оверлея
+    &--active {
+      right: 0;
+      visibility: visible;
+    }
+
+    .header__logo {
+      color: #ffffff;
+    }
+
+    .header__nav-list {
       flex-direction: column;
-      justify-content: space-between;
-      padding: 16px 20px 24px 20px;
-      z-index: 9999;
-      visibility: hidden;
-      transition: right 0.3s ease-in-out, visibility 0.3s ease-in-out;
+      align-items: flex-start;
+      gap: 20px;
+      width: 100%;
+      margin-top: 32px;
+      margin-bottom: auto;
+    }
+
+    .header__nav-link {
+      font-size: 20px;
+      color: #94a3b8;
 
       &--active {
-        right: 0;
-        visibility: visible;
-      }
-
-      .header__logo {
-        color: #ffffff;
-      }
-
-      .header__nav-list {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 20px;
-        width: 100%;
-        margin-top: 32px;
-        margin-bottom: auto;
-      }
-
-      .header__nav-link {
-        font-size: 20px;
-        color: #94a3b8;
-
-        &--active {
-          color: #facc15; // Желтый активный цвет для 'Home'
-        }
+        color: #facc15;
       }
     }
   }
@@ -223,20 +226,44 @@ body.no-scroll {
   }
 }
 
-@media (max-width: 768px) {
+// Tablet (до 1024px)
+@media (max-width: 1024px) {
+  .header {
+    &__container {
+      height: 72px;
+      padding: 0 $size-3;
+    }
+
+    &__nav {
+      display: none;
+    }
+
+    &__actions {
+      .header__btn--login {
+        display: none;
+      }
+
+      .header__btn--signup {
+        display: inline-flex;
+      }
+    }
+
+    &__burger {
+      display: flex;
+    }
+  }
+}
+
+// Mobile (до 640px)
+@media (max-width: 640px) {
   .header {
     &__container {
       height: 64px;
       padding: 0 $size-2;
     }
 
-    &__nav,
     &__actions {
       display: none;
-    }
-
-    &__burger {
-      display: flex;
     }
   }
 }
