@@ -1,3 +1,5 @@
+@use '../abstract/tokens' as *;
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -7,4 +9,6 @@
 body {
   margin: 0;
   padding: 0;
+  background-color: $color-bg;
+  font-family: $font-family-base;
 }
