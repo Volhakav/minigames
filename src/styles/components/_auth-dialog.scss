@@ -12,6 +12,7 @@
   align-items: center;
   justify-content: center;
   z-index: 9999;
+  padding: 16px;
   opacity: 1;
   visibility: visible;
   transition: opacity 0.25s ease-in-out, visibility 0.25s ease-in-out;
@@ -35,9 +36,9 @@
 
 .auth-dialog {
   position: relative;
-  width: 90%;
-  max-width: 440px;
-  padding: 42px 28px 28px;
+  width: 100%;
+  max-width: 420px; 
+  padding: 40px 24px 24px;
   background-color: #fcfbfa;
   border: 2px solid #1e1b3a;
   border-radius: 20px;
@@ -49,7 +50,7 @@
 
   &__close {
     position: absolute;
-    top: 12px;
+    top: 14px;
     right: 14px;
     background: transparent;
     border: none;
@@ -60,9 +61,15 @@
     z-index: 10;
     line-height: 1;
     padding: 4px;
+    transition: opacity 0.15s ease;
 
     &:hover {
-      opacity: 0.7;
+      opacity: 0.6;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #ffd02b;
+      border-radius: 4px;
     }
   }
 
@@ -131,7 +138,11 @@
     font-weight: 700;
     color: #2c274d;
     cursor: pointer;
-    transition: color 0.25s ease;
+    transition: color 0.25s ease, opacity 0.15s ease;
+
+    &:hover:not(&--active) {
+      opacity: 0.7;
+    }
 
     &--active {
       color: #ffffff;
@@ -139,7 +150,7 @@
   }
 }
 
-/* Form Styles */
+/* Form Layout & Field States */
 .auth-form {
   &__header {
     margin-bottom: 20px;
@@ -199,9 +210,21 @@
     font-size: 13px;
     background-color: #ffffff;
     outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+      border-color: #3b3663;
+    }
 
     &:focus {
-      border-color: #ffd02b;
+      border-color: #1e1b3a;
+      box-shadow: 0 0 0 2px #ffd02b;
+    }
+
+    &:disabled {
+      background-color: #f0eff5;
+      cursor: not-allowed;
+      opacity: 0.6;
     }
   }
 
@@ -216,9 +239,10 @@
     justify-content: center;
     padding: 0;
     color: #2c274d;
+    transition: opacity 0.15s ease;
 
     &:hover {
-      opacity: 0.7;
+      opacity: 0.6;
     }
   }
 
@@ -232,6 +256,11 @@
     font-weight: 700;
     color: #1e1b3a;
     text-decoration: none;
+    transition: opacity 0.15s ease;
+
+    &:hover {
+      opacity: 0.7;
+    }
 
     &--underline {
       text-decoration: underline;
@@ -249,11 +278,22 @@
     color: #1e1b3a;
     cursor: pointer;
     box-shadow: 2px 2px 0px #1e1b3a;
-    transition: transform 0.1s;
+    transition: transform 0.1s ease, background-color 0.15s ease, box-shadow 0.1s ease;
+
+    &:hover {
+      background-color: #ffe066;
+    }
 
     &:active {
       transform: translate(1px, 1px);
       box-shadow: 1px 1px 0px #1e1b3a;
+    }
+
+    &:disabled {
+      background-color: #e0e0e0;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
     }
   }
 
@@ -292,6 +332,15 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+
+    &:hover {
+      background-color: #f7f6f5;
+    }
+
+    &:active {
+      background-color: #eceae8;
+    }
   }
 
   &__google-icon {
@@ -316,6 +365,11 @@
     text-decoration: underline;
     cursor: pointer;
     padding: 0;
+    transition: opacity 0.15s ease;
+
+    &:hover {
+      opacity: 0.7;
+    }
   }
 }
 
