@@ -12,9 +12,11 @@ const appInit = (): void => {
     document.body.append(rootContainer);
   }
 
+  const basePath = import.meta.env.BASE_URL;
+
   const router: Router = new Router([
-    { path: '/', render: createHomePage },
-    { path: '/404', render: createNotFoundPage },
+    { path: basePath, render: createHomePage },
+    { path: `${basePath}404`, render: createNotFoundPage },
   ]);
 
   router.init(rootContainer);

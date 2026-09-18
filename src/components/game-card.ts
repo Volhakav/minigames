@@ -22,7 +22,10 @@ export const createGameCard = (game: GameData): HTMLElement => {
   card.className = 'game-card';
 
   const img = document.createElement('img');
-  img.src = game.cardImage;
+  
+  const cleanPath = game.cardImage.replace(/^\//, '');
+  img.src = `${import.meta.env.BASE_URL}${cleanPath}`;
+  
   img.alt = game.name;
   img.className = 'game-card__image';
 
