@@ -133,13 +133,13 @@ export const createAuthDialog = (): HTMLElement => {
       pill.classList.remove('auth-switcher__pill--register');
     }
 
-    tabs.forEach((tab) => {
+    for (const tab of tabs) {
       if (tab.dataset.tab === targetTab) {
         tab.classList.add('auth-switcher__btn--active');
       } else {
         tab.classList.remove('auth-switcher__btn--active');
       }
-    });
+    }
 
     const currentView = targetTab === 'login' ? registerView : loginView;
     const nextView = targetTab === 'login' ? loginView : registerView;
@@ -159,12 +159,12 @@ export const createAuthDialog = (): HTMLElement => {
   };
 
   const switcherBtns = backdrop.querySelectorAll<HTMLButtonElement>('.auth-switcher__btn');
-  switcherBtns.forEach((btn) => {
+  for (const btn of switcherBtns) {
     btn.addEventListener('click', () => {
       const target = btn.dataset.tab as 'login' | 'register';
       if (target) switchTab(target);
     });
-  });
+  }
 
   backdrop.addEventListener('click', (event) => {
     const target = event.target as HTMLElement;
