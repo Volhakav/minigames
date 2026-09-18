@@ -48,7 +48,6 @@ export const createCarouselSection = (games: GameData[]): HTMLElement => {
   nav.append(prevBtn, nextBtn);
   header.append(titleWrapper, nav);
 
-  // Preferred order matching mockup: Cat Mail Co, ISLANDERS, Vacation Cafe, Winter Burrow, Shelve the Potions
   const preferredSlugs = [
     'cat-mail-co',
     'islanders-new-shores',
