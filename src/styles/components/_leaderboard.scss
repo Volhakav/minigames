@@ -1,0 +1,336 @@
+@use '../abstract/tokens' as *;
+
+.leaderboard-section {
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: $size-4 0;
+  box-sizing: border-box;
+
+  &__header {
+    padding: 0 $size-4;
+    margin-bottom: $size-3;
+
+    @media (max-width: 640px) {
+      padding: 0 $size-2;
+      margin-bottom: $size-2;
+    }
+  }
+
+  &__title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: $size-1;
+  }
+
+  &__badge {
+    width: 6px;
+    height: 24px;
+    background-color: $color-primary;
+    border-radius: 4px;
+  }
+
+  &__title {
+    font-family: $font-family-base;
+    font-size: $font-headline-medium;
+    font-weight: $font-weight-bold;
+    color: $color-on-primary;
+    margin: 0;
+
+    @media (max-width: 640px) {
+      font-size: $font-headline-small;
+    }
+  }
+
+  &__title-full {
+    display: inline;
+
+    @media (max-width: 640px) {
+      display: none !important;
+    }
+  }
+
+  &__title-short {
+    display: none;
+
+    @media (max-width: 640px) {
+      display: inline !important;
+    }
+  }
+
+  &__table-wrapper {
+    margin: 0 $size-4;
+    border: 2.5px solid $color-on-primary;
+    box-shadow: 4px 4px 0px $color-on-primary;
+    border-radius: 24px;
+    overflow-x: auto;
+    background-color: $color-white;
+
+    @media (max-width: 640px) {
+      margin: 0 $size-2;
+      border-radius: 16px;
+    }
+  }
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  &__head,
+  &__row--head {
+    background-color: #3a2ebf !important;
+  }
+
+  &__head-full {
+    display: inline;
+
+    @media (max-width: 1024px) {
+      display: none !important;
+    }
+  }
+
+  &__head-short {
+    display: none;
+
+    @media (max-width: 1024px) {
+      display: inline !important;
+    }
+  }
+
+  &__th {
+    font-family: $font-family-base;
+    font-size: 14px;
+    font-weight: 700;
+    color: $color-white !important;
+    background-color: #3a2ebf !important;
+    text-transform: uppercase;
+    padding: 18px 20px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+
+    @media (max-width: 640px) {
+      padding: 14px 12px;
+      font-size: 13px;
+    }
+
+    &--rank {
+      text-align: center;
+      width: 70px;
+    }
+
+    &--player {
+      text-align: left;
+    }
+
+    &--games {
+      text-align: center;
+
+      @media (max-width: 640px) {
+        display: none !important;
+      }
+    }
+
+    &--score {
+      text-align: center;
+    }
+
+    &--streak {
+      text-align: center;
+    }
+
+    &--favorite {
+      text-align: center;
+
+      @media (max-width: 1024px) {
+        display: none !important;
+      }
+    }
+  }
+
+  &__body {
+    background-color: $color-white;
+  }
+
+  &__row {
+    height: 64px;
+    border-bottom: 1px solid #f0eeff;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:nth-child(odd) {
+      background-color: $color-bg;
+    }
+
+    &:nth-child(even) {
+      background-color: $color-white;
+    }
+  }
+
+  &__td {
+    font-family: $font-family-base;
+    font-size: 16px;
+    font-weight: 700;
+    color: $color-on-primary;
+    padding: 14px 20px;
+    vertical-align: middle;
+    white-space: nowrap;
+
+    @media (max-width: 640px) {
+      padding: 12px 12px;
+      font-size: 15px;
+    }
+
+    &--rank {
+      text-align: center;
+    }
+
+    &--player {
+      text-align: left;
+    }
+
+    &--games {
+      text-align: center;
+
+      @media (max-width: 640px) {
+        display: none !important;
+      }
+    }
+
+    &--score {
+      text-align: center;
+    }
+
+    &--streak {
+      text-align: center;
+    }
+
+    &--favorite {
+      text-align: center;
+
+      @media (max-width: 1024px) {
+        display: none !important;
+      }
+    }
+  }
+
+  &__rank-text {
+    font-weight: 700;
+
+    &--top {
+      color: #ffd02b;
+      font-weight: 800;
+    }
+  }
+
+  &__player-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    @media (max-width: 640px) {
+      gap: 8px;
+    }
+  }
+
+  &__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid $color-on-primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    color: $color-on-primary;
+    flex-shrink: 0;
+
+    @media (max-width: 640px) {
+      width: 32px;
+      height: 32px;
+      font-size: 12px;
+    }
+
+    &--1 {
+      background-color: #fde047;
+    }
+
+    &--2 {
+      background-color: #a3e2c9;
+    }
+
+    &--3 {
+      background-color: #bce3ff;
+    }
+
+    &--4 {
+      background-color: #ffc6ff;
+    }
+
+    &--5 {
+      background-color: #e8dff5;
+    }
+  }
+
+  &__player-name {
+    font-weight: 700;
+  }
+
+  &__score-full {
+    display: inline;
+
+    @media (max-width: 640px) {
+      display: none !important;
+    }
+  }
+
+  &__score-short {
+    display: none;
+
+    @media (max-width: 640px) {
+      display: inline !important;
+    }
+  }
+
+  &__streak-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  &__streak-full {
+    display: inline;
+
+    @media (max-width: 1024px) {
+      display: none !important;
+    }
+  }
+
+  &__streak-short {
+    display: none;
+
+    @media (max-width: 1024px) {
+      display: inline !important;
+    }
+  }
+
+  &__fire-icon {
+    font-size: 16px;
+  }
+
+  &__game-tag {
+    display: inline-block;
+    border: 1.5px solid $color-on-primary;
+    border-radius: $corner-full;
+    padding: 4px 14px;
+    font-family: $font-family-base;
+    font-size: 12px;
+    font-weight: 700;
+    color: $color-on-primary;
+    background-color: $color-white;
+    white-space: nowrap;
+  }
+}
