@@ -43,9 +43,9 @@ const renderLoginForm = (): string => `
     <button type="button" class="auth-form__google-btn">
       <span class="auth-form__google-icon">${ICONS.google}</span> Continue with Google
     </button>
-    <p class="auth-form__footer-text">
+    <div class="auth-form__footer-text">
       Don't have an account? <button type="button" class="auth-form__switch-inline" data-target="register">Register</button>
-    </p>
+    </div>
   </form>
 `;
 
@@ -88,9 +88,9 @@ const renderRegisterForm = (): string => `
     <button type="button" class="auth-form__google-btn">
       <span class="auth-form__google-icon">${ICONS.google}</span> Sign up with Google
     </button>
-    <p class="auth-form__footer-text">
+    <div class="auth-form__footer-text">
       Already have an account? <button type="button" class="auth-form__switch-inline" data-target="login">Login</button>
-    </p>
+    </div>
   </form>
 `;
 

@@ -37,7 +37,7 @@
 .auth-dialog {
   position: relative;
   width: 100%;
-  max-width: 420px; 
+  max-width: 420px;
   padding: 40px 24px 24px;
   background-color: #fcfbfa;
   border: 2px solid #1e1b3a;
@@ -150,7 +150,7 @@
   }
 }
 
-/* Form Layout & Field States */
+/* Form Styles */
 .auth-form {
   &__header {
     margin-bottom: 20px;
@@ -332,7 +332,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
+    transition: background-color 0.15s ease;
 
     &:hover {
       background-color: #f7f6f5;
@@ -360,6 +360,7 @@
   &__switch-inline {
     background: none;
     border: none;
+    font-size: inherit;
     font-weight: 800;
     color: #1e1b3a;
     text-decoration: underline;
