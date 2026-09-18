@@ -6,34 +6,48 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(15, 13, 35, 0.75); // Przyciemnione tło
+  background-color: rgba(15, 13, 35, 0.8);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
   opacity: 1;
   visibility: visible;
-  transition: opacity 0.25s ease, visibility 0.25s ease;
+  transition: opacity 0.25s ease-in-out, visibility 0.25s ease-in-out;
 
   &--hidden {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
   }
+
+  &--closing {
+    opacity: 0;
+    visibility: hidden;
+
+    .auth-dialog {
+      transform: scale(0.95) translateY(10px);
+      opacity: 0;
+    }
+  }
 }
 
 .auth-dialog {
   position: relative;
-  width: 100%;
+  width: 90%;
   max-width: 420px;
-  margin: 16px;
   padding: 32px 24px;
   background-color: #1e1b3a;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
   color: #ffffff;
+  
+  /* Animacja okna modala */
+  transform: scale(1) translateY(0);
+  opacity: 1;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease-in-out;
 
   &__close {
     position: absolute;
@@ -43,10 +57,8 @@
     border: none;
     color: #a3a3c2;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px;
+    font-size: 18px;
+    padding: 4px 8px;
     border-radius: 50%;
     transition: color 0.2s, background-color 0.2s;
 
@@ -67,4 +79,8 @@
     color: #a3a3c2;
     margin: 0;
   }
+}
+
+body.no-scroll {
+  overflow: hidden;
 }
