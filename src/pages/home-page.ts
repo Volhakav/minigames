@@ -2,7 +2,8 @@ import { createHeader } from '../components/header';
 import { createHero } from '../components/hero';
 import { createCarouselSection } from '../components/carousel-section';
 import { createLeaderboardSection } from '../components/leaderboard-section';
-import { createGameDevelopersSection } from '../components/game-developers-section'; // 1. Nowy import
+import { createGameDevelopersSection } from '../components/game-developers-section';
+import { createFooter } from '../components/footer';
 import gamesData from '../data/all-games-seed.json';
 import leaderboardData from '../data/leaderboard-seed.json';
 
@@ -17,9 +18,10 @@ export const createHomePage = (): HTMLElement => {
   const carousel = createCarouselSection(gamesData.data);
   const leaderboard = createLeaderboardSection(leaderboardData.data);
   const gameDevelopers = createGameDevelopersSection();
+  const footer = createFooter();
 
   main.append(hero, carousel, leaderboard, gameDevelopers);
-  container.append(header, main);
+  container.append(header, main, footer);
 
   return container;
 };
