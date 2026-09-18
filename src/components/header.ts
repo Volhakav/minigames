@@ -1,4 +1,5 @@
 import logoIcon from '../assets/icons/logo-icon.webp';
+import { openAuthDialog } from './auth-dialog';
 
 export const createHeader = (): HTMLElement => {
   const header = document.createElement('header');
@@ -80,7 +81,7 @@ export const createHeader = (): HTMLElement => {
     burgerBtn.append(line);
   }
 
-  // ОБЕРТКА ДЛЯ ПРАВОГО БЛОКА КНОПОК И БУРГЕРА
+  // --- Right Controls ---
   const rightControls = document.createElement('div');
   rightControls.className = 'header__right-controls';
   rightControls.append(actions, burgerBtn);
@@ -142,23 +143,16 @@ export const createHeader = (): HTMLElement => {
     link.addEventListener('click', closeMenu);
   }
 
-  const handleLoginClick = (): void => {
+  const handleAuthClick = (): void => {
     closeMenu();
-    window.history.pushState({}, '', '/login');
-    window.dispatchEvent(new Event('popstate'));
+    openAuthDialog();
   };
 
-  const handleSignUpClick = (): void => {
-    closeMenu();
-    window.history.pushState({}, '', '/register');
-    window.dispatchEvent(new Event('popstate'));
-  };
+  logInBtn.addEventListener('click', handleAuthClick);
+  mobileLogInBtn.addEventListener('click', handleAuthClick);
 
-  logInBtn.addEventListener('click', handleLoginClick);
-  mobileLogInBtn.addEventListener('click', handleLoginClick);
-
-  signUpBtn.addEventListener('click', handleSignUpClick);
-  mobileSignUpBtn.addEventListener('click', handleSignUpClick);
+  signUpBtn.addEventListener('click', handleAuthClick);
+  mobileSignUpBtn.addEventListener('click', handleAuthClick);
 
   container.append(logo, nav, rightControls);
   header.append(container, mobileOverlay);

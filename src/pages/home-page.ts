@@ -4,6 +4,7 @@ import { createCarouselSection } from '../components/carousel-section';
 import { createLeaderboardSection } from '../components/leaderboard-section';
 import { createGameDevelopersSection } from '../components/game-developers-section';
 import { createFooter } from '../components/footer';
+import { createAuthDialog } from '../components/auth-dialog';
 import gamesData from '../data/all-games-seed.json';
 import leaderboardData from '../data/leaderboard-seed.json';
 
@@ -19,9 +20,10 @@ export const createHomePage = (): HTMLElement => {
   const leaderboard = createLeaderboardSection(leaderboardData.data);
   const gameDevelopers = createGameDevelopersSection();
   const footer = createFooter();
+  const authDialog = createAuthDialog();
 
   main.append(hero, carousel, leaderboard, gameDevelopers);
-  container.append(header, main, footer);
+  container.append(header, main, footer, authDialog);
 
   return container;
 };
