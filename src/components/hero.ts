@@ -1,11 +1,9 @@
-import heroBg from '../assets/images/hero-bg.webp';
-
 export const createHero = (): HTMLElement => {
   const hero = document.createElement('section');
   hero.className = 'hero';
 
   const bgImage = document.createElement('img');
-  bgImage.src = heroBg;
+  bgImage.src = '/images/hero-bg.webp';
   bgImage.alt = '';
   bgImage.className = 'hero__bg';
 

@@ -73,7 +73,9 @@
     color: $color-on-primary;
     cursor: pointer;
     box-shadow: $shadow-level-1;
-    transition: background-color 0.2s ease, transform 0.1s ease;
+    transition:
+      background-color 0.2s ease,
+      transform 0.1s ease;
 
     &:hover {
       background-color: $color-primary-low;
