@@ -1,0 +1,141 @@
+@use '../abstract/tokens' as *;
+
+.hero {
+  position: relative;
+  width: 100%;
+  min-height: 627px;
+  display: flex;
+  align-items: center;
+  background-color: rgba(30, 27, 58, 0.65);
+  border-bottom: 2px solid $color-on-primary;
+
+  &__bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.2;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  &__container {
+    position: relative;
+    z-index: 1;
+    max-width: 1920px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 112px 120px;
+    box-sizing: border-box;
+  }
+
+  &__card {
+    max-width: 580px;
+    width: 100%;
+    background-color: $color-bg;
+    border: 3px solid $color-on-primary;
+    border-radius: $corner-medium;
+    box-shadow: 6px 6px 0px $color-on-primary;
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    box-sizing: border-box;
+  }
+
+  &__title {
+    font-family: $font-family-base;
+    font-size: 48px;
+    line-height: 1.15;
+    font-weight: $font-weight-bold;
+    color: $color-on-primary;
+    margin: 0;
+  }
+
+  &__description {
+    font-family: $font-family-base;
+    font-size: $font-body-medium;
+    line-height: 1.5;
+    color: $color-on-bg-low;
+    margin: 0;
+  }
+
+  &__btn {
+    align-self: flex-start;
+    font-family: $font-family-base;
+    font-size: $font-body-medium;
+    font-weight: $font-weight-bold;
+    padding: 12px 24px;
+    background-color: $color-primary;
+    border: 2px solid $color-on-primary;
+    border-radius: $corner-small;
+    color: $color-on-primary;
+    cursor: pointer;
+    box-shadow: $shadow-level-1;
+    transition:
+      background-color 0.2s ease,
+      transform 0.1s ease;
+
+    &:hover {
+      background-color: $color-primary-low;
+    }
+
+    &:active {
+      transform: translate(2px, 2px);
+    }
+  }
+}
+
+// Tablet Breakpoint
+@media (max-width: 1024px) {
+  .hero {
+    min-height: 520px;
+
+    &__container {
+      padding: 64px 40px;
+    }
+
+    &__card {
+      max-width: 500px;
+      padding: 36px;
+      gap: 20px;
+    }
+
+    &__title {
+      font-size: 40px;
+    }
+  }
+}
+
+// Mobile Breakpoint
+@media (max-width: 640px) {
+  .hero {
+    min-height: auto;
+
+    &__container {
+      padding: 32px 16px;
+    }
+
+    &__card {
+      max-width: 100%;
+      padding: 24px;
+      gap: 16px;
+      border-radius: $corner-medium;
+      box-shadow: 4px 4px 0px $color-on-primary;
+    }
+
+    &__title {
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    &__description {
+      font-size: $font-body-small;
+    }
+
+    &__btn {
+      padding: 10px 20px;
+    }
+  }
+}

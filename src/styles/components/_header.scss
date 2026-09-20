@@ -1,0 +1,271 @@
+@use '../abstract/tokens' as *;
+
+body.no-scroll {
+  overflow: hidden;
+}
+
+.header {
+  position: relative;
+  width: 100%;
+  background-color: $color-bg;
+  border-bottom: 2px solid $color-on-primary;
+
+  &__container {
+    max-width: 1920px;
+    margin: 0 auto;
+    height: 80px;
+    padding: 0 $size-4;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__logo {
+    display: flex;
+    align-items: center;
+    gap: $size-1;
+    text-decoration: none;
+    color: $color-on-primary;
+
+    &-icon {
+      width: 32px;
+      height: 32px;
+    }
+
+    &-text {
+      font-family: $font-family-base;
+      font-size: $font-headline-small;
+      font-weight: $font-weight-bold;
+    }
+  }
+
+  &__nav {
+    &-list {
+      display: flex;
+      align-items: center;
+      gap: $size-4;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    &-link {
+      font-family: $font-family-base;
+      font-size: $font-body-medium;
+      font-weight: $font-weight-medium;
+      color: $color-on-bg-low;
+      text-decoration: none;
+      transition: color 0.2s ease;
+
+      &:hover,
+      &--active {
+        color: $color-on-primary;
+        font-weight: $font-weight-bold;
+      }
+    }
+  }
+
+  // Новый контейнер правых элементов
+  &__right-controls {
+    display: flex;
+    align-items: center;
+    gap: $size-2;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: $size-2;
+  }
+
+  &__btn {
+    font-family: $font-family-base;
+    font-size: $font-body-medium;
+    font-weight: $font-weight-bold;
+    border-radius: $corner-small;
+    cursor: pointer;
+
+    &--login {
+      padding: 10px 20px;
+      background: transparent;
+      border: 2px solid $color-on-primary;
+      color: $color-on-primary;
+
+      &:hover {
+        background-color: $color-secondary;
+      }
+    }
+
+    &--signup {
+      padding: 10px 20px;
+      background-color: $color-primary;
+      border: 2px solid $color-on-primary;
+      color: $color-on-primary;
+
+      &:hover {
+        background-color: $color-primary-low;
+      }
+    }
+  }
+
+  &__burger {
+    display: none;
+    box-sizing: border-box;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    gap: 3px;
+    width: 32px;
+    height: 32px;
+    background-color: $color-white;
+    border: 2px solid $color-on-primary;
+    border-radius: $corner-small;
+    cursor: pointer;
+
+    &-line {
+      width: 16px;
+      height: 2px;
+      background-color: $color-on-primary;
+      border-radius: 1px;
+      display: block;
+    }
+  }
+
+  // Mobile Fullscreen Overlay
+  &__mobile-overlay {
+    display: flex;
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    background-color: #18152e;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px 20px 24px 20px;
+    z-index: 9999;
+    visibility: hidden;
+    transition:
+      right 0.3s ease-in-out,
+      visibility 0.3s ease-in-out;
+
+    &--active {
+      right: 0;
+      visibility: visible;
+    }
+
+    .header__logo {
+      color: #ffffff;
+    }
+
+    .header__nav-list {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 20px;
+      width: 100%;
+      margin-top: 32px;
+      margin-bottom: auto;
+    }
+
+    .header__nav-link {
+      font-size: 20px;
+      color: #94a3b8;
+
+      &--active {
+        color: #facc15;
+      }
+    }
+  }
+
+  &__mobile-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  &__mobile-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: $corner-small;
+    color: #ffffff;
+    cursor: pointer;
+
+    &-icon {
+      font-size: 16px;
+    }
+  }
+
+  &__mobile-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+
+    .header__btn {
+      width: 100%;
+      padding: 12px 0;
+      text-align: center;
+
+      &--login {
+        border-color: #ffffff;
+        color: #ffffff;
+      }
+
+      &--signup {
+        background-color: #facc15;
+        border-color: #facc15;
+        color: #18152e;
+      }
+    }
+  }
+}
+
+// Tablet (до 1024px)
+@media (max-width: 1024px) {
+  .header {
+    &__container {
+      height: 72px;
+      padding: 0 $size-3;
+    }
+
+    &__nav {
+      display: none;
+    }
+
+    &__actions {
+      .header__btn--login {
+        display: none;
+      }
+
+      .header__btn--signup {
+        display: inline-flex;
+      }
+    }
+
+    &__burger {
+      display: flex;
+    }
+  }
+}
+
+// Mobile (до 640px)
+@media (max-width: 640px) {
+  .header {
+    &__container {
+      height: 64px;
+      padding: 0 $size-2;
+    }
+
+    &__actions {
+      display: none;
+    }
+  }
+}
