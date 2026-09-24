@@ -12,14 +12,25 @@ export const createHomePage = (): HTMLElement => {
   const container = document.createElement('div');
   container.className = 'page-home';
 
-  const header = createHeader();
+  const navigateTo = (page: 'home' | 'library') => {
+    window.dispatchEvent(new CustomEvent('navigate', { detail: page }));
+  };
+
+  const header = createHeader({
+    activePage: 'home',
+    onNavigate: navigateTo,
+  });
+
   const main = document.createElement('main');
 
   const hero = createHero();
   const carousel = createCarouselSection(gamesData.data);
   const leaderboard = createLeaderboardSection(leaderboardData.data);
   const gameDevelopers = createGameDevelopersSection();
-  const footer = createFooter();
+
+  const footer = createFooter({
+    onNavigate: navigateTo,
+  });
   const authDialog = createAuthDialog();
 
   main.append(hero, carousel, leaderboard, gameDevelopers);
