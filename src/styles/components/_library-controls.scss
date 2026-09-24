@@ -1,0 +1,168 @@
+@use '../abstract/tokens' as *;
+
+.library-controls {
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 32px 32px 16px;
+  box-sizing: border-box;
+
+  @media (max-width: 768px) {
+    padding: 20px 16px 12px;
+  }
+
+  &__header {
+    margin-bottom: 24px;
+  }
+
+  &__title {
+    font-family: 'Inter', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    color: #18152e;
+    margin: 0 0 8px 0;
+
+    @media (max-width: 768px) {
+      font-size: 28px;
+    }
+  }
+
+  &__subtitle {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    color: #64748b;
+    margin: 0;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+
+    @media (max-width: 768px) {
+      flex-direction: column-reverse;
+      align-items: stretch;
+    }
+  }
+
+  // --- Chips Horizontal Container ---
+  &__chips {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 4px;
+    
+    // Скрытие скроллбара по Acceptance Criteria
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+
+    &::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
+    }
+  }
+
+  &__chip {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 9999px;
+    border: 2px solid #18152e;
+    background-color: #ffffff;
+    color: #18152e;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+
+    &:hover:not(&--active) {
+      background-color: #f1f5f9;
+    }
+
+    &--active {
+      background-color: #ffd02b;
+      box-shadow: 2px 2px 0px #18152e;
+    }
+  }
+
+  // --- Sort Dropdown ---
+  &__sort {
+    position: relative;
+    flex-shrink: 0;
+
+    &-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 16px;
+      background-color: #ffffff;
+      border: 2px solid #18152e;
+      border-radius: 9999px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: #18152e;
+      cursor: pointer;
+      min-width: 180px;
+
+      &:hover {
+        background-color: #f8fafc;
+      }
+    }
+
+    &-arrow {
+      transition: transform 0.2s ease;
+    }
+
+    &--open &-arrow {
+      transform: rotate(180deg);
+    }
+
+    &-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      width: 100%;
+      min-width: 190px;
+      background-color: #ffffff;
+      border: 2px solid #18152e;
+      border-radius: 16px;
+      box-shadow: 4px 4px 0px #18152e;
+      list-style: none;
+      padding: 6px 0;
+      margin: 0;
+      z-index: 100;
+      display: none;
+    }
+
+    &--open &-menu {
+      display: block;
+    }
+
+    &-option {
+      width: 100%;
+      text-align: left;
+      padding: 10px 16px;
+      border: none;
+      background: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: #18152e;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #f1f5f9;
+      }
+
+      &--active {
+        font-weight: 800;
+        background-color: #fef3c7;
+      }
+    }
+  }
+}
