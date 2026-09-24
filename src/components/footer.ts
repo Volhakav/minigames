@@ -1,6 +1,12 @@
 import logoSrc from '../assets/icons/logo-icon.webp';
 
-export const createFooter = (): HTMLElement => {
+export interface FooterOptions {
+  onNavigate?: (page: 'home' | 'library') => void;
+}
+
+export const createFooter = (options: FooterOptions = {}): HTMLElement => {
+  const { onNavigate } = options;
+
   const footer = document.createElement('footer');
   footer.className = 'footer';
 
@@ -23,27 +29,27 @@ export const createFooter = (): HTMLElement => {
           <div class="footer__column">
             <h3 class="footer__title">Explore</h3>
             <ul class="footer__list">
-              <li><a href="#" class="footer__link">Home</a></li>
-              <li><a href="#" class="footer__link">Library</a></li>
-              <li><a href="#" class="footer__link">Categories</a></li>
-              <li><a href="#" class="footer__link">Tournaments</a></li>
+              <li><a href="#" class="footer__link" data-page="home">Home</a></li>
+              <li><a href="#" class="footer__link" data-page="library">Library</a></li>
+              <li><a href="#" class="footer__link" data-page="home">Categories</a></li>
+              <li><a href="#" class="footer__link" data-page="home">Tournaments</a></li>
             </ul>
           </div>
 
           <div class="footer__column">
             <h3 class="footer__title">Company</h3>
             <ul class="footer__list">
-              <li><a href="#" class="footer__link">About Us</a></li>
-              <li><a href="#" class="footer__link">Contact</a></li>
-              <li><a href="#" class="footer__link">Privacy Policy</a></li>
-              <li><a href="#" class="footer__link">Terms of Service</a></li>
+              <li><a href="#" class="footer__link" data-page="home">About Us</a></li>
+              <li><a href="#" class="footer__link" data-page="home">Contact</a></li>
+              <li><a href="#" class="footer__link" data-page="home">Privacy Policy</a></li>
+              <li><a href="#" class="footer__link" data-page="home">Terms of Service</a></li>
             </ul>
           </div>
 
           <div class="footer__column footer__column--community">
             <h3 class="footer__title">Community</h3>
             <div class="footer__socials">
-              <a href="#" class="footer__social-btn" aria-label="Share">
+              <a href="#" class="footer__social-btn" aria-label="Share" data-page="home">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="18" cy="5" r="3"></circle>
                   <circle cx="6" cy="12" r="3"></circle>
@@ -52,14 +58,14 @@ export const createFooter = (): HTMLElement => {
                   <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
                 </svg>
               </a>
-              <a href="#" class="footer__social-btn" aria-label="Chat">
+              <a href="#" class="footer__social-btn" aria-label="Chat" data-page="home">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                   <line x1="8" y1="9" x2="16" y2="9"></line>
                   <line x1="8" y1="13" x2="14" y2="13"></line>
                 </svg>
               </a>
-              <a href="#" class="footer__social-btn" aria-label="RSS">
+              <a href="#" class="footer__social-btn" aria-label="RSS" data-page="home">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M4 11a9 9 0 0 1 9 9"></path>
                   <path d="M4 4a16 16 0 0 1 16 16"></path>
@@ -93,6 +99,18 @@ export const createFooter = (): HTMLElement => {
       </div>
     </div>
   `;
+
+  // --- SPA Event Listeners ---
+  const links = footer.querySelectorAll<HTMLAnchorElement>('[data-page]');
+  links.forEach((link) => {
+    link.addEventListener('click', (event) => {
+      event.preventDefault();
+      const targetPage = (link.dataset.page as 'home' | 'library') || 'home';
+      if (onNavigate) {
+        onNavigate(targetPage);
+      }
+    });
+  });
 
   return footer;
 };
