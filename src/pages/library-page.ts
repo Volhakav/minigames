@@ -1,5 +1,6 @@
 import { createHeader } from '../components/header';
 import { createLibraryControls } from '../components/library-controls';
+import { createLibraryGamesSection } from '../components/library-games'; 
 import { createFooter } from '../components/footer';
 import { createAuthDialog } from '../components/auth-dialog';
 
@@ -21,7 +22,9 @@ export const createLibraryPage = (): HTMLElement => {
 
   const main = document.createElement('main');
   const libraryControls = createLibraryControls();
-  main.append(libraryControls);
+  const libraryGames = createLibraryGamesSection(); 
+
+  main.append(libraryControls, libraryGames); 
 
   const footer = createFooter({
     onNavigate: navigateTo,
