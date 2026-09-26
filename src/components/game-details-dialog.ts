@@ -174,15 +174,37 @@ export const createGameDetailsDialog = (): HTMLElement => {
   const favBtn = dialog.querySelector('.game-dialog__fav-btn');
   const likeBtns = dialog.querySelectorAll('.game-dialog__like-btn');
 
+  let isClosing = false;
+
+  // Анимированное закрытие диалога
   const close = () => {
-    backdrop.remove();
+    if (isClosing) return;
+    isClosing = true;
+
+    backdrop.classList.add('game-dialog-backdrop--closing');
     document.body.classList.remove('no-scroll');
+
+    // Удаляем слушатель Esc
+    document.removeEventListener('keydown', handleKeyDown);
+
+    // Ждем окончания анимации (250ms)
+    setTimeout(() => {
+      backdrop.remove();
+    }, 250);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      close();
+    }
   };
 
   closeBtn?.addEventListener('click', close);
   backdrop.addEventListener('click', (e) => {
     if (e.target === backdrop) close();
   });
+
+  document.addEventListener('keydown', handleKeyDown);
 
   favBtn?.addEventListener('click', () => {
     favBtn.classList.toggle('game-dialog__fav-btn--active');
