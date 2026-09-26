@@ -133,11 +133,11 @@ export const createGameDetailsDialog = (): HTMLElement => {
   const recordsHtml = (gameData.topRecords || [])
     .map(
       (rec) => `
-      <div class="game-dialog__record-item">
+      <li class="game-dialog__record-item">
         <span class="game-dialog__record-user">${getTrophyEmoji(rec.position)} ${rec.playerName}</span>
         <span class="game-dialog__record-score">${formatScore(rec.score)}</span>
         <span class="game-dialog__record-date">${formatRelativeTime(rec.achievedAt)}</span>
-      </div>
+      </li>
     `
     )
     .join('');
@@ -254,11 +254,11 @@ export const createGameDetailsDialog = (): HTMLElement => {
         </div>
       </section>
 
-      <section class="game-dialog__section">
+      <section class="game-dialog__section game-dialog__records-section">
         <h3 class="game-dialog__section-title">🏆 Top Records</h3>
-        <div class="game-dialog__records-list">
+        <ul class="game-dialog__records-list">
           ${recordsHtml}
-        </div>
+        </ul>
       </section>
 
       <section class="game-dialog__section">
