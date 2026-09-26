@@ -169,7 +169,7 @@ export const createGameDetailsDialog = (): HTMLElement => {
           </div>
           <p class="game-dialog__comment-text">${text}</p>
           <button type="button" class="game-dialog__like-btn${isLiked ? ' game-dialog__like-btn--active' : ''}">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="${isLiked ? '#ff4b4b' : 'none'}" stroke="#ff4b4b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="${isLiked ? '#ff4b4b' : 'none'}" stroke="#ff4b4b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
             </svg>
             <span>${likes}</span>
@@ -201,56 +201,58 @@ export const createGameDetailsDialog = (): HTMLElement => {
     </header>
 
     <div class="game-dialog__body">
-      <div class="game-dialog__header">
-        <h2 class="game-dialog__title">${gameData.name}</h2>
-        <div class="game-dialog__stats">
-          <div class="game-dialog__stat">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#FFD02B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-            </svg>
-            <span>${gameData.rating ? gameData.rating.toFixed(1) : '0.0'}</span>
+      <section class="game-dialog__info">
+        <div class="game-dialog__header">
+          <h2 class="game-dialog__title">${gameData.name}</h2>
+          <div class="game-dialog__stats">
+            <div class="game-dialog__stat">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#FFD02B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+              <span>${gameData.rating ? gameData.rating.toFixed(1) : '0.0'}</span>
+            </div>
+            <div class="game-dialog__stat">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#FF4B4B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+              <span>${formatLikes(gameData.likesCount || 0)}</span>
+            </div>
           </div>
-          <div class="game-dialog__stat">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#FF4B4B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        </div>
+
+        <p class="game-dialog__description">
+          ${gameData.fullDescription}
+        </p>
+
+        <div class="game-dialog__meta-grid">
+          <div class="game-dialog__meta-item">
+            <span class="game-dialog__meta-label">Genre</span>
+            <span class="game-dialog__meta-value">${gameData.specs?.genre || ''}</span>
+          </div>
+          <div class="game-dialog__meta-item">
+            <span class="game-dialog__meta-label">Players</span>
+            <span class="game-dialog__meta-value">${gameData.specs?.players || ''}</span>
+          </div>
+          <div class="game-dialog__meta-item">
+            <span class="game-dialog__meta-label">Duration</span>
+            <span class="game-dialog__meta-value">${gameData.specs?.duration || ''}</span>
+          </div>
+          <div class="game-dialog__meta-item">
+            <span class="game-dialog__meta-label">Price</span>
+            <span class="game-dialog__meta-value">${gameData.specs?.price || ''}</span>
+          </div>
+        </div>
+
+        <div class="game-dialog__actions">
+          <button type="button" class="game-dialog__play-btn">Play Now</button>
+          <button type="button" class="game-dialog__fav-btn${gameData.isLikedByCurrentUser ? ' game-dialog__fav-btn--active' : ''}">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
             </svg>
-            <span>${formatLikes(gameData.likesCount || 0)}</span>
-          </div>
+            <span>Add to Favorites</span>
+          </button>
         </div>
-      </div>
-
-      <p class="game-dialog__description">
-        ${gameData.fullDescription}
-      </p>
-
-      <div class="game-dialog__meta-grid">
-        <div class="game-dialog__meta-item">
-          <span class="game-dialog__meta-label">Genre</span>
-          <span class="game-dialog__meta-value">${gameData.specs?.genre || ''}</span>
-        </div>
-        <div class="game-dialog__meta-item">
-          <span class="game-dialog__meta-label">Players</span>
-          <span class="game-dialog__meta-value">${gameData.specs?.players || ''}</span>
-        </div>
-        <div class="game-dialog__meta-item">
-          <span class="game-dialog__meta-label">Duration</span>
-          <span class="game-dialog__meta-value">${gameData.specs?.duration || ''}</span>
-        </div>
-        <div class="game-dialog__meta-item">
-          <span class="game-dialog__meta-label">Price</span>
-          <span class="game-dialog__meta-value">${gameData.specs?.price || ''}</span>
-        </div>
-      </div>
-
-      <div class="game-dialog__actions">
-        <button type="button" class="game-dialog__play-btn">Play Now</button>
-        <button type="button" class="game-dialog__fav-btn${gameData.isLikedByCurrentUser ? ' game-dialog__fav-btn--active' : ''}">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-          </svg>
-          <span>Add to Favorites</span>
-        </button>
-      </div>
+      </section>
 
       <section class="game-dialog__section">
         <h3 class="game-dialog__section-title">🏆 Top Records</h3>
@@ -282,6 +284,7 @@ export const createGameDetailsDialog = (): HTMLElement => {
   backdrop.append(dialog);
 
   const closeBtn = dialog.querySelector('.game-dialog__close');
+  const playBtn = dialog.querySelector('.game-dialog__play-btn');
   const favBtn = dialog.querySelector('.game-dialog__fav-btn');
   const likeBtns = dialog.querySelectorAll('.game-dialog__like-btn');
 
@@ -313,6 +316,10 @@ export const createGameDetailsDialog = (): HTMLElement => {
   });
 
   document.addEventListener('keydown', handleKeyDown);
+
+  playBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+  });
 
   favBtn?.addEventListener('click', () => {
     favBtn.classList.toggle('game-dialog__fav-btn--active');
