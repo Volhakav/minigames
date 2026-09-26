@@ -156,25 +156,29 @@ export const createGameDetailsDialog = (): HTMLElement => {
         comment.isLikedByCurrentUser ?? comment.isLiked ?? comment.liked
       );
 
+      const strokeColor = isLiked ? '#ff4b4b' : '#18152e';
+
       return `
-        <article class="game-dialog__comment">
-          <div class="game-dialog__comment-header">
-            <div class="game-dialog__comment-author">
-              <div class="game-dialog__avatar" style="background-color: ${bg};">
-                ${initial}
+        <li class="game-dialog__comment-item">
+          <article class="game-dialog__comment">
+            <div class="game-dialog__comment-header">
+              <div class="game-dialog__comment-author">
+                <div class="game-dialog__avatar" style="background-color: ${bg};">
+                  ${initial}
+                </div>
+                <span class="game-dialog__author-name">${authorName}</span>
               </div>
-              <span class="game-dialog__author-name">${authorName}</span>
+              <span class="game-dialog__comment-time">${displayTime}</span>
             </div>
-            <span class="game-dialog__comment-time">${displayTime}</span>
-          </div>
-          <p class="game-dialog__comment-text">${text}</p>
-          <button type="button" class="game-dialog__like-btn${isLiked ? ' game-dialog__like-btn--active' : ''}">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="${isLiked ? '#ff4b4b' : 'none'}" stroke="#ff4b4b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-            </svg>
-            <span>${likes}</span>
-          </button>
-        </article>
+            <p class="game-dialog__comment-text">${text}</p>
+            <button type="button" class="game-dialog__like-btn${isLiked ? ' game-dialog__like-btn--active' : ''}">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="${strokeColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+              <span>${likes}</span>
+            </button>
+          </article>
+        </li>
       `;
     })
     .join('');
@@ -261,22 +265,28 @@ export const createGameDetailsDialog = (): HTMLElement => {
         </ul>
       </section>
 
-      <section class="game-dialog__section">
+      <section class="game-dialog__section game-dialog__comments-section">
         <h3 class="game-dialog__section-title">Comments (${rawComments.length})</h3>
-        <div class="game-dialog__comment-input-row">
+        
+        <form class="game-dialog__comment-form">
           <div class="game-dialog__avatar game-dialog__avatar--user">U</div>
-          <input type="text" class="game-dialog__input" placeholder="Write a comment..." />
-          <button type="button" class="game-dialog__send-btn" aria-label="Send comment">
+          <textarea 
+            class="game-dialog__textarea" 
+            placeholder="Write a comment..." 
+            rows="1"
+            aria-label="Write a comment"
+          ></textarea>
+          <button type="submit" class="game-dialog__send-btn" aria-label="Send comment">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
             </svg>
           </button>
-        </div>
+        </form>
 
-        <div class="game-dialog__comments-list">
+        <ul class="game-dialog__comments-list">
           ${commentsHtml}
-        </div>
+        </ul>
       </section>
     </div>
   `;
@@ -287,6 +297,8 @@ export const createGameDetailsDialog = (): HTMLElement => {
   const playBtn = dialog.querySelector('.game-dialog__play-btn');
   const favBtn = dialog.querySelector('.game-dialog__fav-btn');
   const likeBtns = dialog.querySelectorAll('.game-dialog__like-btn');
+  const commentForm = dialog.querySelector('.game-dialog__comment-form');
+  const textarea = dialog.querySelector('.game-dialog__textarea') as HTMLTextAreaElement | null;
 
   let isClosing = false;
 
@@ -325,13 +337,25 @@ export const createGameDetailsDialog = (): HTMLElement => {
     favBtn.classList.toggle('game-dialog__fav-btn--active');
   });
 
+  if (textarea) {
+    textarea.addEventListener('input', () => {
+      textarea.style.height = 'auto';
+      const newHeight = Math.min(textarea.scrollHeight, 88);
+      textarea.style.height = `${newHeight}px`;
+    });
+  }
+
+  commentForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+  });
+
   likeBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       const isNowActive = btn.classList.toggle('game-dialog__like-btn--active');
       const svg = btn.querySelector('svg');
       if (svg) {
-        svg.setAttribute('fill', isNowActive ? '#ff4b4b' : 'none');
-        svg.setAttribute('stroke', '#ff4b4b');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', isNowActive ? '#ff4b4b' : '#18152e');
       }
     });
   });
