@@ -1,4 +1,5 @@
 import { GameData, createGameCard } from './game-card';
+import { openGameDetailsDialog } from './game-details-dialog';
 
 export const createCarouselSection = (games: GameData[]): HTMLElement => {
   const section = document.createElement('section');
@@ -48,29 +49,8 @@ export const createCarouselSection = (games: GameData[]): HTMLElement => {
   nav.append(prevBtn, nextBtn);
   header.append(titleWrapper, nav);
 
-  const preferredSlugs = [
-    'cat-mail-co',
-    'islanders-new-shores',
-    'vacation-cafe-simulator',
-    'winter-burrow',
-    'shelve-the-potions',
-  ];
-
-  const orderedGames: GameData[] = [];
-  const gamesMap = new Map(games.map((g) => [g.slug, g]));
-
-  for (const slug of preferredSlugs) {
-    const found = gamesMap.get(slug);
-    if (found) {
-      orderedGames.push(found);
-      gamesMap.delete(slug);
-    }
-  }
-
-  // Append remaining games if any
-  for (const g of gamesMap.values()) {
-    orderedGames.push(g);
-  }
+  const featuredGames = games.filter((g) => g.featured === true).slice(0, 9);
+  const sliderGames = featuredGames.length >= 9 ? featuredGames : games.slice(0, 9);
 
   const trackContainer = document.createElement('div');
   trackContainer.className = 'carousel-section__track-container';
@@ -80,12 +60,20 @@ export const createCarouselSection = (games: GameData[]): HTMLElement => {
 
   const slideElements: HTMLElement[] = [];
 
-  for (const game of orderedGames) {
+  for (const game of sliderGames) {
     const slideWrapper = document.createElement('div');
     slideWrapper.className = 'carousel-section__slide';
 
     const card = createGameCard(game);
     slideWrapper.append(card);
+
+    slideWrapper.addEventListener('click', (e) => {
+      if (!isDragging) {
+        e.preventDefault();
+        openGameDetailsDialog();
+      }
+    });
+
     track.append(slideWrapper);
     slideElements.push(slideWrapper);
   }
@@ -93,7 +81,11 @@ export const createCarouselSection = (games: GameData[]): HTMLElement => {
   trackContainer.append(track);
   section.append(header, trackContainer);
 
-  let currentIndex = 2; // Initial index 2 (Vacation Cafe Simulator)
+  let currentIndex = 0;
+  let autoplayTimer: number | null = null;
+  let isPointerDown = false;
+  let startX = 0;
+  let isDragging = false;
 
   const updateCarousel = () => {
     const is3CardView = window.innerWidth <= 1024;
@@ -107,9 +99,13 @@ export const createCarouselSection = (games: GameData[]): HTMLElement => {
         'carousel-section__slide--hidden'
       );
 
+      // Obliczamy względną odległość w pętli cyklicznej
       let distance = (index - currentIndex) % N;
       if (distance > N / 2) distance -= N;
       if (distance < -N / 2) distance += N;
+
+      // KLUCZOWA POPRAWKA: Ustawiamy właściwość order, aby karty zawsze wyświetlały się od lewej do prawej
+      slide.style.order = `${distance + Math.floor(N / 2)}`;
 
       if (distance === 0) {
         slide.classList.add('carousel-section__slide--wide');
@@ -123,22 +119,102 @@ export const createCarouselSection = (games: GameData[]): HTMLElement => {
         slide.classList.add('carousel-section__slide--hidden');
       }
     }
+
+    // Ukrywanie informacji na kartach zwężonych poniżej 288px
+    requestAnimationFrame(() => {
+      for (const slide of slideElements) {
+        const rect = slide.getBoundingClientRect();
+        const cardInfo = slide.querySelector('.game-card__info') as HTMLElement;
+        if (cardInfo) {
+          if (rect.width < 288) {
+            cardInfo.style.display = 'none';
+          } else {
+            cardInfo.style.display = '';
+          }
+        }
+      }
+    });
   };
 
-  prevBtn.addEventListener('click', () => {
-    const N = slideElements.length;
-    currentIndex = (currentIndex - 1 + N) % N;
-    updateCarousel();
-  });
-
-  nextBtn.addEventListener('click', () => {
+  const nextSlide = () => {
     const N = slideElements.length;
     currentIndex = (currentIndex + 1) % N;
     updateCarousel();
+  };
+
+  const prevSlide = () => {
+    const N = slideElements.length;
+    currentIndex = (currentIndex - 1 + N) % N;
+    updateCarousel();
+  };
+
+  const startAutoplay = () => {
+    stopAutoplay();
+    autoplayTimer = window.setInterval(nextSlide, 4000);
+  };
+
+  const stopAutoplay = () => {
+    if (autoplayTimer !== null) {
+      clearInterval(autoplayTimer);
+      autoplayTimer = null;
+    }
+  };
+
+  const resetAutoplay = () => {
+    stopAutoplay();
+    startAutoplay();
+  };
+
+  prevBtn.addEventListener('click', () => {
+    prevSlide();
+    resetAutoplay();
   });
 
+  nextBtn.addEventListener('click', () => {
+    nextSlide();
+    resetAutoplay();
+  });
+
+  trackContainer.addEventListener('pointerdown', (e: PointerEvent) => {
+    isPointerDown = true;
+    isDragging = false;
+    startX = e.clientX;
+    stopAutoplay();
+  });
+
+  trackContainer.addEventListener('pointermove', (e: PointerEvent) => {
+    if (!isPointerDown) return;
+    if (Math.abs(e.clientX - startX) > 5) {
+      isDragging = true;
+    }
+  });
+
+  const handlePointerUpOrCancel = (e: PointerEvent) => {
+    if (!isPointerDown) return;
+    isPointerDown = false;
+
+    const diff = e.clientX - startX;
+    if (isDragging) {
+      if (diff < -40) {
+        nextSlide();
+      } else if (diff > 40) {
+        prevSlide();
+      } else {
+        updateCarousel();
+      }
+      resetAutoplay();
+    } else {
+      startAutoplay();
+    }
+  };
+
+  trackContainer.addEventListener('pointerup', handlePointerUpOrCancel);
+  trackContainer.addEventListener('pointercancel', handlePointerUpOrCancel);
+
   window.addEventListener('resize', updateCarousel);
+
   updateCarousel();
+  startAutoplay();
 
   return section;
 };
