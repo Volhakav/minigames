@@ -1,20 +1,18 @@
 import { createHeader } from '../components/header';
 import { createLibraryControls } from '../components/library-controls';
-import { createLibraryGamesSection } from '../components/library-games';
+import { createLibraryGames } from '../components/library-games';
 import { createLibraryPagination } from '../components/library-pagination';
 import { createFooter } from '../components/footer';
 import { createAuthDialog } from '../components/auth-dialog';
+import gamesData from '../data/all-games-seed.json';
+
+const navigateTo = (page: 'home' | 'library'): void => {
+  window.dispatchEvent(new CustomEvent('navigate', { detail: page }));
+};
 
 export const createLibraryPage = (): HTMLElement => {
   const container = document.createElement('div');
   container.className = 'page-library';
-
-  const navigateTo = (page: 'home' | 'library') => {
-    const basePath = import.meta.env.BASE_URL;
-    const targetPath = page === 'home' ? basePath : `${basePath}library`;
-    window.location.hash = targetPath;
-    window.dispatchEvent(new CustomEvent('navigate', { detail: page }));
-  };
 
   const header = createHeader({
     activePage: 'library',
@@ -22,17 +20,18 @@ export const createLibraryPage = (): HTMLElement => {
   });
 
   const main = document.createElement('main');
-  const libraryControls = createLibraryControls();
-  const libraryGames = createLibraryGamesSection();
-  const libraryPagination = createLibraryPagination({ totalPages: 5, initialPage: 1 });
+  main.className = 'page-library__main';
 
-  main.append(libraryControls, libraryGames, libraryPagination);
+  const controls = createLibraryControls();
+  const gamesGrid = createLibraryGames(gamesData.data);
+  const pagination = createLibraryPagination();
 
   const footer = createFooter({
     onNavigate: navigateTo,
   });
   const authDialog = createAuthDialog();
 
+  main.append(controls, gamesGrid, pagination);
   container.append(header, main, footer, authDialog);
 
   return container;

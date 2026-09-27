@@ -41,7 +41,7 @@ export const createLibraryControls = (): HTMLElement => {
   const chipsContainer = document.createElement('div');
   chipsContainer.className = 'library-controls__chips';
 
-  CATEGORIES.forEach((cat) => {
+  for (const cat of CATEGORIES) {
     const chipBtn = document.createElement('button');
     chipBtn.type = 'button';
     chipBtn.className = `library-controls__chip${cat.isDefault ? ' library-controls__chip--active' : ''}`;
@@ -49,14 +49,14 @@ export const createLibraryControls = (): HTMLElement => {
     chipBtn.dataset.slug = cat.slug;
 
     chipBtn.addEventListener('click', () => {
-      chipsContainer.querySelectorAll('.library-controls__chip').forEach((btn) => {
+      for (const btn of chipsContainer.querySelectorAll('.library-controls__chip')) {
         btn.classList.remove('library-controls__chip--active');
-      });
+      }
       chipBtn.classList.add('library-controls__chip--active');
     });
 
     chipsContainer.append(chipBtn);
-  });
+  }
 
   // --- Custom Sort Dropdown ---
   const sortWrapper = document.createElement('div');
@@ -75,7 +75,7 @@ export const createLibraryControls = (): HTMLElement => {
   const sortMenu = document.createElement('ul');
   sortMenu.className = 'library-controls__sort-menu';
 
-  SORT_OPTIONS.forEach((option, index) => {
+  for (const [index, option] of SORT_OPTIONS.entries()) {
     const li = document.createElement('li');
     li.className = 'library-controls__sort-item';
 
@@ -89,9 +89,9 @@ export const createLibraryControls = (): HTMLElement => {
       const labelSpan = sortTrigger.querySelector('.library-controls__sort-label');
       if (labelSpan) labelSpan.textContent = option.label;
 
-      sortMenu.querySelectorAll('.library-controls__sort-option').forEach((opt) => {
+      for (const opt of sortMenu.querySelectorAll('.library-controls__sort-option')) {
         opt.classList.remove('library-controls__sort-option--active');
-      });
+      }
       btn.classList.add('library-controls__sort-option--active');
 
       sortWrapper.classList.remove('library-controls__sort--open');
@@ -99,7 +99,7 @@ export const createLibraryControls = (): HTMLElement => {
 
     li.append(btn);
     sortMenu.append(li);
-  });
+  }
 
   sortTrigger.addEventListener('click', (e) => {
     e.stopPropagation();

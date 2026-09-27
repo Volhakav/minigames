@@ -82,7 +82,7 @@ export const createCarouselSection = (games: GameData[]): HTMLElement => {
   section.append(header, trackContainer);
 
   let currentIndex = 0;
-  let autoplayTimer: number | null = null;
+  let autoplayTimer: number | undefined;
   let isPointerDown = false;
   let startX = 0;
   let isDragging = false;
@@ -99,12 +99,10 @@ export const createCarouselSection = (games: GameData[]): HTMLElement => {
         'carousel-section__slide--hidden'
       );
 
-      // Obliczamy względną odległość w pętli cyklicznej
       let distance = (index - currentIndex) % N;
       if (distance > N / 2) distance -= N;
       if (distance < -N / 2) distance += N;
 
-      // KLUCZOWA POPRAWKA: Ustawiamy właściwość order, aby karty zawsze wyświetlały się od lewej do prawej
       slide.style.order = `${distance + Math.floor(N / 2)}`;
 
       if (distance === 0) {
@@ -119,21 +117,6 @@ export const createCarouselSection = (games: GameData[]): HTMLElement => {
         slide.classList.add('carousel-section__slide--hidden');
       }
     }
-
-    // Ukrywanie informacji na kartach zwężonych poniżej 288px
-    requestAnimationFrame(() => {
-      for (const slide of slideElements) {
-        const rect = slide.getBoundingClientRect();
-        const cardInfo = slide.querySelector('.game-card__info') as HTMLElement;
-        if (cardInfo) {
-          if (rect.width < 288) {
-            cardInfo.style.display = 'none';
-          } else {
-            cardInfo.style.display = '';
-          }
-        }
-      }
-    });
   };
 
   const nextSlide = () => {
@@ -148,16 +131,16 @@ export const createCarouselSection = (games: GameData[]): HTMLElement => {
     updateCarousel();
   };
 
+  const stopAutoplay = () => {
+    if (autoplayTimer !== undefined) {
+      clearInterval(autoplayTimer);
+      autoplayTimer = undefined;
+    }
+  };
+
   const startAutoplay = () => {
     stopAutoplay();
     autoplayTimer = window.setInterval(nextSlide, 4000);
-  };
-
-  const stopAutoplay = () => {
-    if (autoplayTimer !== null) {
-      clearInterval(autoplayTimer);
-      autoplayTimer = null;
-    }
   };
 
   const resetAutoplay = () => {
@@ -197,10 +180,8 @@ export const createCarouselSection = (games: GameData[]): HTMLElement => {
     if (isDragging) {
       if (diff < -40) {
         nextSlide();
-      } else if (diff > 40) {
-        prevSlide();
       } else {
-        updateCarousel();
+        diff > 40 ? prevSlide() : updateCarousel();
       }
       resetAutoplay();
     } else {

@@ -62,7 +62,7 @@ export const createLibraryPagination = (options: PaginationOptions = {}): HTMLEl
     container.append(prevBtn);
 
     const visiblePages = getVisiblePages();
-    visiblePages.forEach((page) => {
+    for (const page of visiblePages) {
       const pageBtn = document.createElement('button');
       pageBtn.type = 'button';
       pageBtn.className = `library-pagination__page${page === currentPage ? ' library-pagination__page--active' : ''}`;
@@ -76,7 +76,7 @@ export const createLibraryPagination = (options: PaginationOptions = {}): HTMLEl
       });
 
       container.append(pageBtn);
-    });
+    }
 
     const nextBtn = document.createElement('button');
     nextBtn.type = 'button';

@@ -470,7 +470,9 @@
     justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
-    transition: transform 0.15s ease, background-color 0.15s ease;
+    transition:
+      transform 0.15s ease,
+      background-color 0.15s ease;
 
     &:hover {
       background-color: #2e285c;
@@ -558,7 +560,9 @@
     svg {
       fill: none !important;
       stroke: #18152e;
-      transition: fill 0.2s ease, stroke 0.2s ease;
+      transition:
+        fill 0.2s ease,
+        stroke 0.2s ease;
     }
 
     &--active {

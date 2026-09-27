@@ -160,9 +160,9 @@ export const createLibraryGamesSection = (): HTMLElement => {
 
   const gamesList: LibraryGame[] = gamesData.data;
 
-  gamesList.forEach((game) => {
+  for (const game of gamesList) {
     grid.append(createLibraryGameCard(game));
-  });
+  }
 
   container.append(grid);
   section.append(container);

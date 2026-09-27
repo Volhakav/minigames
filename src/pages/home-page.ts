@@ -8,13 +8,13 @@ import { createAuthDialog } from '../components/auth-dialog';
 import gamesData from '../data/all-games-seed.json';
 import leaderboardData from '../data/leaderboard-seed.json';
 
+const navigateTo = (page: 'home' | 'library'): void => {
+  window.dispatchEvent(new CustomEvent('navigate', { detail: page }));
+};
+
 export const createHomePage = (): HTMLElement => {
   const container = document.createElement('div');
   container.className = 'page-home';
-
-  const navigateTo = (page: 'home' | 'library') => {
-    window.dispatchEvent(new CustomEvent('navigate', { detail: page }));
-  };
 
   const header = createHeader({
     activePage: 'home',

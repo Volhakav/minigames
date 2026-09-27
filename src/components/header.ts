@@ -51,7 +51,7 @@ export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
     { name: 'Home', page: 'home' },
     { name: 'Library', page: 'library' },
     { name: 'Tournaments', page: 'home' }, // Non-existent pages map to Home
-    { name: 'Community', page: 'home' },   // Non-existent pages map to Home
+    { name: 'Community', page: 'home' }, // Non-existent pages map to Home
   ];
 
   for (const item of navItems) {
@@ -60,9 +60,9 @@ export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
 
     const a = document.createElement('a');
     a.href = '#';
-    
+
     // Check if this item corresponds to the current active page
-    const isActive = (item.name.toLowerCase() === activePage);
+    const isActive = item.name.toLowerCase() === activePage;
     a.className = `header__nav-link${isActive ? ' header__nav-link--active' : ''}`;
     a.textContent = item.name;
 
@@ -136,13 +136,13 @@ export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
   const mobileNavList = document.createElement('ul');
   mobileNavList.className = 'header__nav-list';
 
-  navItems.forEach((item) => {
+  for (const item of navItems) {
     const li = document.createElement('li');
     li.className = 'header__nav-item';
 
     const a = document.createElement('a');
     a.href = '#';
-    const isActive = (item.name.toLowerCase() === activePage);
+    const isActive = item.name.toLowerCase() === activePage;
     a.className = `header__nav-link${isActive ? ' header__nav-link--active' : ''}`;
     a.textContent = item.name;
 
@@ -153,7 +153,7 @@ export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
 
     li.append(a);
     mobileNavList.append(li);
-  });
+  }
 
   const mobileActions = document.createElement('div');
   mobileActions.className = 'header__mobile-actions';

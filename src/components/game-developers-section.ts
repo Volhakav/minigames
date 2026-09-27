@@ -54,7 +54,8 @@ export const createGameDevelopersSection = (): HTMLElement => {
   // Email note
   const contactNote = document.createElement('p');
   contactNote.className = 'game-developers-section__contact';
-  contactNote.innerHTML = 'or contact us at <a href="mailto:developers@minigames.com">developers@minigames.com</a>';
+  contactNote.innerHTML =
+    'or contact us at <a href="mailto:developers@minigames.com">developers@minigames.com</a>';
 
   card.append(title, description, button, contactNote);
   container.append(illustrationWrapper, card);

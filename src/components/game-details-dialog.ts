@@ -42,6 +42,10 @@ export interface RawCommentItem {
   liked?: boolean;
 }
 
+interface SeedWrapper<T> {
+  data?: T;
+}
+
 const imageModules = import.meta.glob('/public/images/games/*.{jpg,jpeg,png,webp}', {
   eager: true,
   import: 'default',
@@ -96,7 +100,7 @@ const formatRelativeTime = (dateString?: string): string => {
   if (!dateString) return 'recently';
 
   const date = new Date(dateString);
-  if (isNaN(date.getTime())) return dateString;
+  if (Number.isNaN(date.getTime())) return dateString;
 
   const now = new Date('2026-08-30T10:00:00Z');
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
@@ -105,11 +109,11 @@ const formatRelativeTime = (dateString?: string): string => {
     const mins = Math.max(1, Math.floor(diffInSeconds / 60));
     return `${mins} ${mins === 1 ? 'minute' : 'minutes'} ago`;
   }
-  if (diffInSeconds < 86400) {
+  if (diffInSeconds < 86_400) {
     const hours = Math.floor(diffInSeconds / 3600);
     return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
   }
-  const days = Math.floor(diffInSeconds / 86400);
+  const days = Math.floor(diffInSeconds / 86_400);
   return `${days} ${days === 1 ? 'day' : 'days'} ago`;
 };
 
@@ -121,8 +125,13 @@ const getAvatarColor = (name: string): string => {
 };
 
 export const createGameDetailsDialog = (): HTMLElement => {
-  const gameData: GameDetails = (gameDataSeed as any).data || gameDataSeed;
-  const rawComments: RawCommentItem[] = (commentsDataSeed as any).data || commentsDataSeed || [];
+  const gameData: GameDetails =
+    (gameDataSeed as SeedWrapper<GameDetails>).data || (gameDataSeed as unknown as GameDetails);
+
+  const rawComments: RawCommentItem[] =
+    (commentsDataSeed as SeedWrapper<RawCommentItem[]>).data ||
+    (commentsDataSeed as unknown as RawCommentItem[]) ||
+    [];
 
   const backdrop = document.createElement('div');
   backdrop.className = 'game-dialog-backdrop';
@@ -152,9 +161,7 @@ export const createGameDetailsDialog = (): HTMLElement => {
       const bg = comment.avatarBg || getAvatarColor(authorName);
       const initial = authorName.charAt(0).toUpperCase();
 
-      const isLiked = Boolean(
-        comment.isLikedByCurrentUser ?? comment.isLiked ?? comment.liked
-      );
+      const isLiked = Boolean(comment.isLikedByCurrentUser ?? comment.isLiked ?? comment.liked);
 
       const strokeColor = isLiked ? '#ff4b4b' : '#18152e';
 
@@ -349,7 +356,7 @@ export const createGameDetailsDialog = (): HTMLElement => {
     e.preventDefault();
   });
 
-  likeBtns.forEach((btn) => {
+  for (const btn of likeBtns) {
     btn.addEventListener('click', () => {
       const isNowActive = btn.classList.toggle('game-dialog__like-btn--active');
       const svg = btn.querySelector('svg');
@@ -358,7 +365,7 @@ export const createGameDetailsDialog = (): HTMLElement => {
         svg.setAttribute('stroke', isNowActive ? '#ff4b4b' : '#18152e');
       }
     });
-  });
+  }
 
   return backdrop;
 };

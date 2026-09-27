@@ -102,7 +102,7 @@ export const createFooter = (options: FooterOptions = {}): HTMLElement => {
 
   // --- SPA Event Listeners ---
   const links = footer.querySelectorAll<HTMLAnchorElement>('[data-page]');
-  links.forEach((link) => {
+  for (const link of links) {
     link.addEventListener('click', (event) => {
       event.preventDefault();
       const targetPage = (link.dataset.page as 'home' | 'library') || 'home';
@@ -110,7 +110,7 @@ export const createFooter = (options: FooterOptions = {}): HTMLElement => {
         onNavigate(targetPage);
       }
     });
-  });
+  }
 
   return footer;
 };
