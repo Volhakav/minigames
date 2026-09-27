@@ -8,18 +8,29 @@ import { createAuthDialog } from '../components/auth-dialog';
 import gamesData from '../data/all-games-seed.json';
 import leaderboardData from '../data/leaderboard-seed.json';
 
+const navigateTo = (page: 'home' | 'library'): void => {
+  window.dispatchEvent(new CustomEvent('navigate', { detail: page }));
+};
+
 export const createHomePage = (): HTMLElement => {
   const container = document.createElement('div');
   container.className = 'page-home';
 
-  const header = createHeader();
+  const header = createHeader({
+    activePage: 'home',
+    onNavigate: navigateTo,
+  });
+
   const main = document.createElement('main');
 
   const hero = createHero();
   const carousel = createCarouselSection(gamesData.data);
   const leaderboard = createLeaderboardSection(leaderboardData.data);
   const gameDevelopers = createGameDevelopersSection();
-  const footer = createFooter();
+
+  const footer = createFooter({
+    onNavigate: navigateTo,
+  });
   const authDialog = createAuthDialog();
 
   main.append(hero, carousel, leaderboard, gameDevelopers);

@@ -3,11 +3,11 @@ export const createHero = (): HTMLElement => {
   hero.className = 'hero';
 
   const bgImage = document.createElement('img');
-  
+
   // Poprawiona ścieżka uwzględniająca bazę Vite
   const cleanPath = 'images/hero-bg.webp'.replace(/^\//, '');
   bgImage.src = `${import.meta.env.BASE_URL}${cleanPath}`;
-  
+
   bgImage.alt = '';
   bgImage.className = 'hero__bg';
 

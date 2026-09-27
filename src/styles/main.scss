@@ -6,4 +6,8 @@
 @use './components/leaderboard';
 @use './components/game-developers-section.scss';
 @use './components/footer';
-@use 'components/auth-dialog';
+@use './components/auth-dialog';
+@use './components/library-controls';
+@use './components/game-details-dialog';
+@use './components/library-games';
+@use './components/library-pagination';

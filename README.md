@@ -8,4 +8,3 @@ A responsive Single Page Application (SPA) for mini-games, leaderboards, and use
 - **Styling:** Sass (SCSS)
 - **Bundler:** Vite
 - **Code Quality:** ESLint, Prettier, Husky
-
