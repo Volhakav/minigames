@@ -13,28 +13,23 @@ const appInit = (): void => {
     document.body.append(rootContainer);
   }
 
-  const basePath = import.meta.env.BASE_URL;
+  const rawBase = import.meta.env.BASE_URL || '/';
+  const basePath = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
 
-  const routes = {
-    home: createHomePage,
-    library: createLibraryPage,
-  };
-
-  const renderPage = (page: 'home' | 'library') => {
-    rootContainer.innerHTML = '';
-    rootContainer.append(routes[page]());
-  };
+  const router: Router = new Router([
+    { path: basePath || '/', render: createHomePage },
+    { path: `${basePath}/`, render: createHomePage },
+    { path: `${basePath}/library`, render: createLibraryPage },
+    { path: `${basePath}/404`, render: createNotFoundPage },
+  ]);
 
   window.addEventListener('navigate', (e: Event) => {
     const customEvent = e as CustomEvent<'home' | 'library'>;
-    renderPage(customEvent.detail);
+    const page = customEvent.detail;
+    const targetPath = page === 'home' ? `${basePath}/` : `${basePath}/${page}`;
+    window.history.pushState({}, '', targetPath);
+    router.init(rootContainer);
   });
-
-  const router: Router = new Router([
-    { path: basePath, render: createHomePage },
-    { path: `${basePath}library`, render: createLibraryPage },
-    { path: `${basePath}404`, render: createNotFoundPage },
-  ]);
 
   router.init(rootContainer);
 };
