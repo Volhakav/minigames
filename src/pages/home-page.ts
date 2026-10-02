@@ -5,7 +5,6 @@ import { createLeaderboardSection } from '../components/leaderboard-section';
 import { createGameDevelopersSection } from '../components/game-developers-section';
 import { createFooter } from '../components/footer';
 import { createAuthDialog } from '../components/auth-dialog';
-import gamesData from '../data/all-games-seed.json';
 import leaderboardData from '../data/leaderboard-seed.json';
 
 const navigateTo = (page: 'home' | 'library'): void => {
@@ -24,7 +23,7 @@ export const createHomePage = (): HTMLElement => {
   const main = document.createElement('main');
 
   const hero = createHero();
-  const carousel = createCarouselSection(gamesData.data);
+  const carousel = createCarouselSection();
   const leaderboard = createLeaderboardSection(leaderboardData.data);
   const gameDevelopers = createGameDevelopersSection();
 
