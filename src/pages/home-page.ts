@@ -5,7 +5,6 @@ import { createLeaderboardSection } from '../components/leaderboard-section';
 import { createGameDevelopersSection } from '../components/game-developers-section';
 import { createFooter } from '../components/footer';
 import { createAuthDialog } from '../components/auth-dialog';
-import leaderboardData from '../data/leaderboard-seed.json';
 
 const navigateTo = (page: 'home' | 'library'): void => {
   window.dispatchEvent(new CustomEvent('navigate', { detail: page }));
@@ -24,7 +23,7 @@ export const createHomePage = (): HTMLElement => {
 
   const hero = createHero();
   const carousel = createCarouselSection();
-  const leaderboard = createLeaderboardSection(leaderboardData.data);
+  const leaderboard = createLeaderboardSection();
   const gameDevelopers = createGameDevelopersSection();
 
   const footer = createFooter({

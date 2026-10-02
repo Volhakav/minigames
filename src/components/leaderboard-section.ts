@@ -1,3 +1,6 @@
+import { fetchLeaderboard } from '../services/api';
+import { showSnackbar } from './snackbar';
+
 export interface LeaderboardPlayer {
   rank: number;
   playerName: string;
@@ -27,7 +30,7 @@ const formatScoreShort = (score: number): string => {
   return score.toString();
 };
 
-export const createLeaderboardSection = (players: LeaderboardPlayer[]): HTMLElement => {
+export const createLeaderboardSection = (): HTMLElement => {
   const section = document.createElement('section');
   section.className = 'leaderboard-section';
 
@@ -53,113 +56,173 @@ export const createLeaderboardSection = (players: LeaderboardPlayer[]): HTMLElem
   const tableWrapper = document.createElement('div');
   tableWrapper.className = 'leaderboard-section__table-wrapper';
 
-  const table = document.createElement('table');
-  table.className = 'leaderboard-table';
-
-  const thead = document.createElement('thead');
-  thead.className = 'leaderboard-table__head';
-
-  const headerRow = document.createElement('tr');
-  headerRow.className = 'leaderboard-table__row leaderboard-table__row--head';
-
-  const headers = [
-    { html: 'RANK', classModifier: 'rank' },
-    { html: 'PLAYER', classModifier: 'player' },
-    {
-      html: '<span class="leaderboard-table__head-full">GAMES PLAYED</span><span class="leaderboard-table__head-short">GAMES</span>',
-      classModifier: 'games',
-    },
-    {
-      html: '<span class="leaderboard-table__head-full">TOTAL SCORE</span><span class="leaderboard-table__head-short">SCORE</span>',
-      classModifier: 'score',
-    },
-    { html: 'STREAK', classModifier: 'streak' },
-    { html: 'FAVORITE GAME', classModifier: 'favorite' },
-  ];
-
-  for (const h of headers) {
-    const th = document.createElement('th');
-    th.className = `leaderboard-table__th leaderboard-table__th--${h.classModifier}`;
-    th.innerHTML = h.html;
-    headerRow.append(th);
-  }
-
-  thead.append(headerRow);
-
-  const tbody = document.createElement('tbody');
-  tbody.className = 'leaderboard-table__body';
-
-  for (const player of players) {
-    const row = document.createElement('tr');
-    row.className = 'leaderboard-table__row';
-
-    // Rank cell
-    const tdRank = document.createElement('td');
-    tdRank.className = 'leaderboard-table__td leaderboard-table__td--rank';
-    const rankSpan = document.createElement('span');
-    rankSpan.className = `leaderboard-table__rank-text${
-      player.rank === 1 ? ' leaderboard-table__rank-text--top' : ''
-    }`;
-    rankSpan.textContent = `#${player.rank}`;
-    tdRank.append(rankSpan);
-
-    // Player cell
-    const tdPlayer = document.createElement('td');
-    tdPlayer.className = 'leaderboard-table__td leaderboard-table__td--player';
-    const playerCell = document.createElement('div');
-    playerCell.className = 'leaderboard-table__player-cell';
-
-    const avatar = document.createElement('div');
-    avatar.className = `leaderboard-table__avatar leaderboard-table__avatar--${player.rank}`;
-    avatar.textContent = getInitials(player.playerName);
-
-    const playerName = document.createElement('span');
-    playerName.className = 'leaderboard-table__player-name';
-    playerName.textContent = player.playerName;
-
-    playerCell.append(avatar, playerName);
-    tdPlayer.append(playerCell);
-
-    // Games Played cell
-    const tdGames = document.createElement('td');
-    tdGames.className = 'leaderboard-table__td leaderboard-table__td--games';
-    tdGames.textContent = player.gamesPlayed.toString();
-
-    // Total Score cell
-    const tdScore = document.createElement('td');
-    tdScore.className = 'leaderboard-table__td leaderboard-table__td--score';
-    tdScore.innerHTML = `
-      <span class="leaderboard-table__score-full">${formatScore(player.totalScore)}</span>
-      <span class="leaderboard-table__score-short">${formatScoreShort(player.totalScore)}</span>
-    `;
-
-    // Streak cell
-    const tdStreak = document.createElement('td');
-    tdStreak.className = 'leaderboard-table__td leaderboard-table__td--streak';
-    const streakCell = document.createElement('div');
-    streakCell.className = 'leaderboard-table__streak-cell';
-    streakCell.innerHTML = `
-      <span class="leaderboard-table__fire-icon">🔥</span>
-      <span class="leaderboard-table__streak-full">${player.streakDays} days</span>
-      <span class="leaderboard-table__streak-short">${player.streakDays}d</span>
-    `;
-    tdStreak.append(streakCell);
-
-    // Favorite Game cell
-    const tdFavorite = document.createElement('td');
-    tdFavorite.className = 'leaderboard-table__td leaderboard-table__td--favorite';
-    const gameTag = document.createElement('span');
-    gameTag.className = 'leaderboard-table__game-tag';
-    gameTag.textContent = player.favoriteGameName;
-    tdFavorite.append(gameTag);
-
-    row.append(tdRank, tdPlayer, tdGames, tdScore, tdStreak, tdFavorite);
-    tbody.append(row);
-  }
-
-  table.append(thead, tbody);
-  tableWrapper.append(table);
   section.append(header, tableWrapper);
+
+  const renderSkeleton = (): void => {
+    tableWrapper.innerHTML = `
+      <div class="leaderboard-section__skeleton">
+        <div class="leaderboard-section__skeleton-row"></div>
+        <div class="leaderboard-section__skeleton-row"></div>
+        <div class="leaderboard-section__skeleton-row"></div>
+        <div class="leaderboard-section__skeleton-row"></div>
+        <div class="leaderboard-section__skeleton-row"></div>
+      </div>
+    `;
+  };
+
+  const renderError = (message: string): void => {
+    tableWrapper.innerHTML = `
+      <div class="leaderboard-section__error-banner">
+        <p class="leaderboard-section__error-message">${message}</p>
+        <button type="button" class="leaderboard-section__retry-btn">Retry</button>
+      </div>
+    `;
+
+    const retryBtn = tableWrapper.querySelector('.leaderboard-section__retry-btn');
+    retryBtn?.addEventListener('click', () => {
+      loadData();
+    });
+  };
+
+  const renderEmpty = (): void => {
+    tableWrapper.innerHTML = `
+      <div class="leaderboard-section__empty-state">
+        <p>No leaderboard data available at the moment.</p>
+      </div>
+    `;
+  };
+
+  const renderTable = (players: LeaderboardPlayer[]): void => {
+    tableWrapper.innerHTML = '';
+
+    const table = document.createElement('table');
+    table.className = 'leaderboard-table';
+
+    const thead = document.createElement('thead');
+    thead.className = 'leaderboard-table__head';
+
+    const headerRow = document.createElement('tr');
+    headerRow.className = 'leaderboard-table__row leaderboard-table__row--head';
+
+    const headers = [
+      { html: 'RANK', classModifier: 'rank' },
+      { html: 'PLAYER', classModifier: 'player' },
+      {
+        html: '<span class="leaderboard-table__head-full">GAMES PLAYED</span><span class="leaderboard-table__head-short">GAMES</span>',
+        classModifier: 'games',
+      },
+      {
+        html: '<span class="leaderboard-table__head-full">TOTAL SCORE</span><span class="leaderboard-table__head-short">SCORE</span>',
+        classModifier: 'score',
+      },
+      { html: 'STREAK', classModifier: 'streak' },
+      { html: 'FAVORITE GAME', classModifier: 'favorite' },
+    ];
+
+    for (const h of headers) {
+      const th = document.createElement('th');
+      th.className = `leaderboard-table__th leaderboard-table__th--${h.classModifier}`;
+      th.innerHTML = h.html;
+      headerRow.append(th);
+    }
+
+    thead.append(headerRow);
+
+    const tbody = document.createElement('tbody');
+    tbody.className = 'leaderboard-table__body';
+
+    for (const player of players) {
+      const row = document.createElement('tr');
+      row.className = 'leaderboard-table__row';
+
+      // Rank cell
+      const tdRank = document.createElement('td');
+      tdRank.className = 'leaderboard-table__td leaderboard-table__td--rank';
+      const rankSpan = document.createElement('span');
+      rankSpan.className = `leaderboard-table__rank-text${
+        player.rank === 1 ? ' leaderboard-table__rank-text--top' : ''
+      }`;
+      rankSpan.textContent = `#${player.rank}`;
+      tdRank.append(rankSpan);
+
+      // Player cell
+      const tdPlayer = document.createElement('td');
+      tdPlayer.className = 'leaderboard-table__td leaderboard-table__td--player';
+      const playerCell = document.createElement('div');
+      playerCell.className = 'leaderboard-table__player-cell';
+
+      const avatar = document.createElement('div');
+      avatar.className = `leaderboard-table__avatar leaderboard-table__avatar--${player.rank}`;
+      avatar.textContent = getInitials(player.playerName);
+
+      const playerName = document.createElement('span');
+      playerName.className = 'leaderboard-table__player-name';
+      playerName.textContent = player.playerName;
+
+      playerCell.append(avatar, playerName);
+      tdPlayer.append(playerCell);
+
+      // Games Played cell
+      const tdGames = document.createElement('td');
+      tdGames.className = 'leaderboard-table__td leaderboard-table__td--games';
+      tdGames.textContent = player.gamesPlayed.toString();
+
+      // Total Score cell
+      const tdScore = document.createElement('td');
+      tdScore.className = 'leaderboard-table__td leaderboard-table__td--score';
+      tdScore.innerHTML = `
+        <span class="leaderboard-table__score-full">${formatScore(player.totalScore)}</span>
+        <span class="leaderboard-table__score-short">${formatScoreShort(player.totalScore)}</span>
+      `;
+
+      // Streak cell
+      const tdStreak = document.createElement('td');
+      tdStreak.className = 'leaderboard-table__td leaderboard-table__td--streak';
+      const streakCell = document.createElement('div');
+      streakCell.className = 'leaderboard-table__streak-cell';
+      streakCell.innerHTML = `
+        <span class="leaderboard-table__fire-icon">🔥</span>
+        <span class="leaderboard-table__streak-full">${player.streakDays} days</span>
+        <span class="leaderboard-table__streak-short">${player.streakDays}d</span>
+      `;
+      tdStreak.append(streakCell);
+
+      // Favorite Game cell
+      const tdFavorite = document.createElement('td');
+      tdFavorite.className = 'leaderboard-table__td leaderboard-table__td--favorite';
+      const gameTag = document.createElement('span');
+      gameTag.className = 'leaderboard-table__game-tag';
+      gameTag.textContent = player.favoriteGameName;
+      tdFavorite.append(gameTag);
+
+      row.append(tdRank, tdPlayer, tdGames, tdScore, tdStreak, tdFavorite);
+      tbody.append(row);
+    }
+
+    table.append(thead, tbody);
+    tableWrapper.append(table);
+  };
+
+  const loadData = async (): Promise<void> => {
+    renderSkeleton();
+
+    try {
+      const players = await fetchLeaderboard();
+
+      if (!players || players.length === 0) {
+        renderEmpty();
+        return;
+      }
+
+      renderTable(players);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to load leaderboard data';
+      renderError(errorMsg);
+      showSnackbar(errorMsg, 'error');
+    }
+  };
+
+  loadData();
 
   return section;
 };

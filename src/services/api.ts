@@ -1,4 +1,5 @@
 import { GameData } from '../components/game-card';
+import { LeaderboardPlayer } from '../components/leaderboard-section';
 
 export const API_BASE_URL = 'https://faxb76kxra.execute-api.eu-central-1.amazonaws.com';
 
@@ -7,14 +8,14 @@ export const resolveApiImageUrl = (rawPath?: string): string => {
     return 'https://placehold.co/300x380/1e1e1e/ffffff?text=No+Image';
   }
 
-  // Wyciągamy samą nazwę pliku (np. islanders-new-shores-card.jpg)
-  const fileName = rawPath.split('/').pop() || rawPath;
+  if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
+    return rawPath;
+  }
 
-  // Pobieramy base path ustawiony w Vite (np. '/minigames/' dla GH Pages lub '/' lokalnie)
+  const fileName = rawPath.split('/').pop() || rawPath;
   const rawBase = import.meta.env.BASE_URL || '/';
   const basePath = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
 
-  // Wskazujemy na Twój lokalny folder public/images/games/
   return `${basePath}images/games/${fileName}`;
 };
 
@@ -29,11 +30,44 @@ export const fetchFeaturedGames = async (): Promise<GameData[]> => {
   const rawList = Array.isArray(result) ? result : result.data || [];
 
   return rawList.map((game: Record<string, unknown>) => {
-    const rawImage = (game.cardImage as string) || '';
+    const rawImage =
+      (game.cardImage as string) ||
+      (game.coverImage as string) ||
+      (game.image as string) ||
+      (game.heroImage as string) ||
+      '';
 
     return {
-      ...game,
+      slug: (game.slug as string) || '',
+      name: (game.name as string) || (game.title as string) || 'Untitled',
+      category: (game.category as string) || '',
+      price: (game.price as string) || 'Free',
+      shortDescription: (game.shortDescription as string) || '',
+      rating: (game.rating as number) || 0,
+      likesCount: (game.likesCount as number) || 0,
       cardImage: resolveApiImageUrl(rawImage),
-    } as unknown as GameData;
+      featured: Boolean(game.featured),
+    };
   });
+};
+
+export const fetchLeaderboard = async (): Promise<LeaderboardPlayer[]> => {
+  const response = await fetch(`${API_BASE_URL}/api/leaderboard`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to load leaderboard data (Status: ${response.status})`);
+  }
+
+  const result = await response.json();
+  const rawList = Array.isArray(result) ? result : result.data || [];
+
+  return rawList.map((item: Record<string, unknown>, index: number) => ({
+    rank: (item.rank as number) || index + 1,
+    playerName: (item.playerName as string) || (item.player as string) || (item.name as string) || 'Anonymous',
+    gamesPlayed: (item.gamesPlayed as number) || (item.games as number) || 0,
+    totalScore: (item.totalScore as number) || (item.score as number) || 0,
+    streakDays: (item.streakDays as number) || (item.streak as number) || 0,
+    favoriteGameSlug: (item.favoriteGameSlug as string) || '',
+    favoriteGameName: (item.favoriteGameName as string) || (item.favoriteGame as string) || 'N/A',
+  }));
 };
