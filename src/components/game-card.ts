@@ -1,16 +1,18 @@
 export interface GameData {
   slug: string;
-  name: string;
-  category: string;
-  price: string;
-  shortDescription: string;
-  rating: number;
-  likesCount: number;
-  cardImage: string;
-  featured: boolean;
+  name?: string;
+  title?: string;
+  category?: string;
+  price?: string;
+  shortDescription?: string;
+  rating?: number;
+  likesCount?: number;
+  cardImage?: string;
+  featured?: boolean;
 }
 
-const formatLikes = (count: number): string => {
+const formatLikes = (count?: number): string => {
+  if (!count) return '0';
   if (count >= 1000) {
     return `${(count / 1000).toFixed(1)}K`;
   }
@@ -22,23 +24,27 @@ export const createGameCard = (game: GameData): HTMLElement => {
   card.className = 'game-card';
 
   const img = document.createElement('img');
+  const gameTitle = game.name || game.title || 'Untitled';
+  const imageUrl = game.cardImage || 'https://placehold.co/300x380/1e1e1e/ffffff?text=No+Image';
 
-  const cleanPath = game.cardImage.replace(/^\//, '');
-  img.src = `${import.meta.env.BASE_URL}${cleanPath}`;
-
-  img.alt = game.name;
+  img.src = imageUrl;
+  img.alt = gameTitle;
   img.className = 'game-card__image';
 
-  img.addEventListener('error', () => {
-    img.src = 'https://placehold.co/300x380/1e1e1e/ffffff?text=No+Image';
-  });
+  img.addEventListener(
+    'error',
+    () => {
+      img.src = 'https://placehold.co/300x380/1e1e1e/ffffff?text=No+Image';
+    },
+    { once: true }
+  );
 
   const overlay = document.createElement('div');
   overlay.className = 'game-card__overlay';
 
   const title = document.createElement('h3');
   title.className = 'game-card__title';
-  title.textContent = game.name;
+  title.textContent = gameTitle;
 
   const meta = document.createElement('div');
   meta.className = 'game-card__meta';
@@ -49,7 +55,7 @@ export const createGameCard = (game: GameData): HTMLElement => {
     <svg class="game-card__icon game-card__icon--star" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#FFD02B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
     </svg>
-    <span>${game.rating.toFixed(1)}</span>
+    <span>${game.rating ? game.rating.toFixed(1) : '0.0'}</span>
   `;
 
   const likes = document.createElement('div');
