@@ -3,6 +3,23 @@ import { LeaderboardPlayer } from '../components/leaderboard-section';
 
 export const API_BASE_URL = 'https://faxb76kxra.execute-api.eu-central-1.amazonaws.com';
 
+export interface FetchGamesParams {
+  page?: number;
+  limit?: number;
+  category?: string;
+  sort?: string;
+}
+
+export interface GamesApiResponse {
+  data: GameData[];
+  meta?: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
 export const resolveApiImageUrl = (rawPath?: string): string => {
   if (!rawPath || typeof rawPath !== 'string') {
     return 'https://placehold.co/300x380/1e1e1e/ffffff?text=No+Image';
@@ -49,6 +66,47 @@ export const fetchFeaturedGames = async (): Promise<GameData[]> => {
       featured: Boolean(game.featured),
     };
   });
+};
+
+export const fetchLibraryGames = async (params: FetchGamesParams = {}): Promise<GamesApiResponse> => {
+  const { page = 1, limit = 6, category = 'all', sort = 'rating-desc' } = params;
+
+  const queryParams = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    category,
+    sort,
+  });
+
+  const response = await fetch(`${API_BASE_URL}/api/games?${queryParams.toString()}`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to load library games (Status: ${response.status})`);
+  }
+
+  const result = await response.json();
+  const rawList = Array.isArray(result) ? result : result.data || [];
+
+  const formattedGames: GameData[] = rawList.map((game: Record<string, unknown>) => {
+    const rawImage = (game.cardImage as string) || (game.coverImage as string) || (game.image as string) || '';
+
+    return {
+      slug: (game.slug as string) || '',
+      name: (game.name as string) || (game.title as string) || 'Untitled',
+      category: (game.category as string) || 'all',
+      price: (game.price as string) || 'Free',
+      shortDescription: (game.shortDescription as string) || '',
+      rating: (game.rating as number) || 0,
+      likesCount: (game.likesCount as number) || 0,
+      cardImage: resolveApiImageUrl(rawImage),
+      featured: Boolean(game.featured),
+    };
+  });
+
+  return {
+    data: formattedGames,
+    meta: result.meta,
+  };
 };
 
 export const fetchLeaderboard = async (): Promise<LeaderboardPlayer[]> => {
