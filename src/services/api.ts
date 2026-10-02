@@ -3,6 +3,13 @@ import { LeaderboardPlayer } from '../components/leaderboard-section';
 
 export const API_BASE_URL = 'https://faxb76kxra.execute-api.eu-central-1.amazonaws.com';
 
+export interface CategoryItem {
+  id?: string;
+  name: string;
+  value: string;
+  isDefault?: boolean;
+}
+
 export interface FetchGamesParams {
   page?: number;
   limit?: number;
@@ -34,6 +41,17 @@ export const resolveApiImageUrl = (rawPath?: string): string => {
   const basePath = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
 
   return `${basePath}images/games/${fileName}`;
+};
+
+export const fetchCategories = async (): Promise<CategoryItem[]> => {
+  const response = await fetch(`${API_BASE_URL}/api/categories`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to load categories (Status: ${response.status})`);
+  }
+
+  const result = await response.json();
+  return Array.isArray(result) ? result : result.data || [];
 };
 
 export const fetchFeaturedGames = async (): Promise<GameData[]> => {
