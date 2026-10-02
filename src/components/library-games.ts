@@ -1,5 +1,5 @@
 import { openGameDetailsDialog } from './game-details-dialog';
-import { fetchLibraryGames, fetchCategories, CategoryItem, resolveApiImageUrl } from '../services/api';
+import { fetchLibraryGames, resolveApiImageUrl } from '../services/api';
 import { showSnackbar } from './snackbar';
 
 export interface LibraryGame {
@@ -124,44 +124,22 @@ export const createLibraryGameCard = (game: LibraryGame): HTMLElement => {
   return card;
 };
 
-export const createLibraryGamesSection = (): HTMLElement => {
+export interface LibraryGamesController {
+  element: HTMLElement;
+  updateState: (params: { category?: string; sort?: string }) => void;
+}
+
+export const createLibraryGamesSection = (): LibraryGamesController => {
   const section = document.createElement('section');
   section.className = 'library-games';
-
-  let currentCategory = 'all';
-  let categoriesList: CategoryItem[] = [];
-
-  const categoriesContainer = document.createElement('div');
-  categoriesContainer.className = 'library-games__categories';
 
   const container = document.createElement('div');
   container.className = 'library-games__container';
 
-  section.append(categoriesContainer, container);
+  section.append(container);
 
-  const renderCategories = (categories: CategoryItem[]): void => {
-    categoriesContainer.innerHTML = '';
-    const list = document.createElement('div');
-    list.className = 'library-categories-chips';
-
-    for (const cat of categories) {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = `library-category-chip${cat.value === currentCategory ? ' library-category-chip--active' : ''}`;
-      chip.textContent = cat.name;
-
-      chip.addEventListener('click', () => {
-        if (currentCategory === cat.value) return;
-        currentCategory = cat.value;
-        renderCategories(categoriesList);
-        loadGames();
-      });
-
-      list.append(chip);
-    }
-
-    categoriesContainer.append(list);
-  };
+  let currentCategory = 'all';
+  let currentSort = 'rating-desc';
 
   const renderSkeleton = (): void => {
     container.innerHTML = `
@@ -186,7 +164,7 @@ export const createLibraryGamesSection = (): HTMLElement => {
 
     const retryBtn = container.querySelector('.library-games__retry-btn');
     retryBtn?.addEventListener('click', () => {
-      initSection();
+      loadGames();
     });
   };
 
@@ -216,6 +194,7 @@ export const createLibraryGamesSection = (): HTMLElement => {
     try {
       const response = await fetchLibraryGames({
         category: currentCategory,
+        sort: currentSort,
         limit: 6,
       });
 
@@ -232,23 +211,14 @@ export const createLibraryGamesSection = (): HTMLElement => {
     }
   };
 
-  const initSection = async (): Promise<void> => {
-    try {
-      categoriesList = await fetchCategories();
-      const defaultCat = categoriesList.find((c) => c.isDefault);
-      if (defaultCat) {
-        currentCategory = defaultCat.value;
-      }
-      renderCategories(categoriesList);
-      await loadGames();
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Failed to load categories';
-      renderError(errorMsg);
-      showSnackbar(errorMsg, 'error');
-    }
+  loadGames();
+
+  return {
+    element: section,
+    updateState: ({ category, sort }) => {
+      if (category !== undefined) currentCategory = category;
+      if (sort !== undefined) currentSort = sort;
+      loadGames();
+    },
   };
-
-  initSection();
-
-  return section;
 };

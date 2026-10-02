@@ -1,25 +1,27 @@
-import categoriesData from '../data/categories.json';
+import { fetchCategories, CategoryItem } from '../services/api';
+import { showSnackbar } from './snackbar';
 
-export interface Category {
-  slug: string;
+export interface SortOption {
+  value: string;
   label: string;
-  isDefault?: boolean;
 }
 
-const CATEGORIES: Category[] = categoriesData.data;
-
-const SORT_OPTIONS = [
+export const SORT_OPTIONS: SortOption[] = [
   { value: 'rating-desc', label: 'Sort by: Rating ↓' },
   { value: 'rating-asc', label: 'Sort by: Rating ↑' },
-  { value: 'title-asc', label: 'Sort by: Title A-Z' },
-  { value: 'likes-desc', label: 'Sort by: Popularity' },
+  { value: 'name-asc', label: 'Sort by: Name A-Z' },
+  { value: 'name-desc', label: 'Sort by: Name Z-A' },
 ];
 
-export const createLibraryControls = (): HTMLElement => {
+interface LibraryControlsCallbacks {
+  onCategoryChange: (categoryValue: string) => void;
+  onSortChange: (sortValue: string) => void;
+}
+
+export const createLibraryControls = (callbacks: LibraryControlsCallbacks): HTMLElement => {
   const container = document.createElement('section');
   container.className = 'library-controls';
 
-  // --- Title Section ---
   const titleWrapper = document.createElement('div');
   titleWrapper.className = 'library-controls__header';
 
@@ -33,32 +35,13 @@ export const createLibraryControls = (): HTMLElement => {
 
   titleWrapper.append(title, subtitle);
 
-  // --- Controls Row (Chips + Sort) ---
   const controlsRow = document.createElement('div');
   controlsRow.className = 'library-controls__row';
 
-  // --- Filtering Chips ---
   const chipsContainer = document.createElement('div');
   chipsContainer.className = 'library-controls__chips';
+  chipsContainer.innerHTML = '<span style="opacity: 0.6;">Loading categories...</span>';
 
-  for (const cat of CATEGORIES) {
-    const chipBtn = document.createElement('button');
-    chipBtn.type = 'button';
-    chipBtn.className = `library-controls__chip${cat.isDefault ? ' library-controls__chip--active' : ''}`;
-    chipBtn.textContent = cat.label;
-    chipBtn.dataset.slug = cat.slug;
-
-    chipBtn.addEventListener('click', () => {
-      for (const btn of chipsContainer.querySelectorAll('.library-controls__chip')) {
-        btn.classList.remove('library-controls__chip--active');
-      }
-      chipBtn.classList.add('library-controls__chip--active');
-    });
-
-    chipsContainer.append(chipBtn);
-  }
-
-  // --- Custom Sort Dropdown ---
   const sortWrapper = document.createElement('div');
   sortWrapper.className = 'library-controls__sort';
 
@@ -95,6 +78,8 @@ export const createLibraryControls = (): HTMLElement => {
       btn.classList.add('library-controls__sort-option--active');
 
       sortWrapper.classList.remove('library-controls__sort--open');
+
+      callbacks.onSortChange(option.value);
     });
 
     li.append(btn);
@@ -113,6 +98,42 @@ export const createLibraryControls = (): HTMLElement => {
   sortWrapper.append(sortTrigger, sortMenu);
   controlsRow.append(chipsContainer, sortWrapper);
   container.append(titleWrapper, controlsRow);
+
+  const loadCategories = async (): Promise<void> => {
+    try {
+      const categories: CategoryItem[] = await fetchCategories();
+      chipsContainer.innerHTML = '';
+
+      const activeCategory = categories.find((c) => c.isDefault)?.value || categories.find((c) => c.isDefault)?.slug || 'all';
+
+      for (const cat of categories) {
+        const catValue = cat.value || cat.slug || 'all';
+        const catLabel = cat.label || cat.name || catValue;
+
+        const chipBtn = document.createElement('button');
+        chipBtn.type = 'button';
+        const isActive = catValue === activeCategory;
+        chipBtn.className = `library-controls__chip${isActive ? ' library-controls__chip--active' : ''}`;
+        chipBtn.textContent = catLabel;
+        chipBtn.dataset.value = catValue;
+
+        chipBtn.addEventListener('click', () => {
+          for (const btn of chipsContainer.querySelectorAll('.library-controls__chip')) {
+            btn.classList.remove('library-controls__chip--active');
+          }
+          chipBtn.classList.add('library-controls__chip--active');
+          callbacks.onCategoryChange(catValue);
+        });
+
+        chipsContainer.append(chipBtn);
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to load categories';
+      showSnackbar(msg, 'error');
+    }
+  };
+
+  loadCategories();
 
   return container;
 };
