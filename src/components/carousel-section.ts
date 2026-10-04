@@ -115,7 +115,7 @@ export const createCarouselSection = (): HTMLElement => {
       slideWrapper.addEventListener('click', (e) => {
         if (!isDragging) {
           e.preventDefault();
-          openGameDetailsDialog();
+          openGameDetailsDialog(game.slug);
         }
       });
 

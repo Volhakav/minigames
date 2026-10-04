@@ -115,7 +115,7 @@ export const createLibraryGameCard = (game: LibraryGame): HTMLElement => {
   detailsBtn.textContent = 'Details';
 
   detailsBtn.addEventListener('click', () => {
-    openGameDetailsDialog();
+    openGameDetailsDialog(game.slug);
   });
 
   footer.append(stats, detailsBtn);

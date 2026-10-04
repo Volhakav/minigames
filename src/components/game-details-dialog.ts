@@ -1,30 +1,40 @@
-import { fetchGameDetails, GameDetails, GameRecord, RawCommentItem } from '../services/api';
+import {
+  fetchGameDetails,
+  fetchGameComments,
+  GameDetails,
+  GameRecord,
+  RawCommentItem,
+} from '../services/api';
 import { showSnackbar } from './snackbar';
 
-const DEFAULT_RECORDS: GameRecord[] = [
-  { position: 1, playerName: 'ForestWhisperer', score: 12500, achievedAt: '2026-08-28T14:30:00Z' },
-  { position: 2, playerName: 'HerbalGatherer', score: 10800, achievedAt: '2026-08-29T09:15:00Z' },
-  { position: 3, playerName: 'CozyGamer99', score: 9400, achievedAt: '2026-08-29T18:45:00Z' },
-];
-
-const DEFAULT_COMMENTS: RawCommentItem[] = [
-  {
-    id: '1',
-    author: 'ForestExplorer',
-    text: 'Such a relaxing game! Love the art style and soundtrack.',
-    likesCount: 14,
-    createdAt: '2026-08-29T11:20:00Z',
-    isLikedByCurrentUser: true,
-  },
-  {
-    id: '2',
-    author: 'CottageCoreFan',
-    text: 'The puzzles are very intuitive. Perfect for cozy evenings!',
-    likesCount: 8,
-    createdAt: '2026-08-29T16:05:00Z',
-    isLikedByCurrentUser: false,
-  },
-];
+const SEED_COMMENTS: Record<string, RawCommentItem[]> = {
+  'tukoni-forest-keepers': [
+    {
+      id: '1',
+      author: 'ForestExplorer',
+      text: 'Such a relaxing game! Love the art style and soundtrack.',
+      likesCount: 14,
+      createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+      isLikedByCurrentUser: true,
+    },
+    {
+      id: '2',
+      author: 'CottageCoreFan',
+      text: 'The puzzles are very intuitive. Perfect for cozy evenings!',
+      likesCount: 8,
+      createdAt: new Date(Date.now() - 1000 * 3600 * 5).toISOString(),
+      isLikedByCurrentUser: false,
+    },
+    {
+      id: '3',
+      author: 'HerbalGatherer',
+      text: 'Found all hidden secrets in the first area!',
+      likesCount: 5,
+      createdAt: new Date(Date.now() - 1000 * 86400 * 3).toISOString(),
+      isLikedByCurrentUser: false,
+    },
+  ],
+};
 
 const formatLikes = (count: number): string => {
   if (count >= 1000) {
@@ -44,8 +54,8 @@ const getTrophyEmoji = (position: number): string => {
   return '';
 };
 
-const formatRelativeTime = (dateString?: string): string => {
-  if (!dateString) return 'recently';
+export const formatRelativeTime = (dateString?: string): string => {
+  if (!dateString) return 'just now';
 
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return dateString;
@@ -53,16 +63,37 @@ const formatRelativeTime = (dateString?: string): string => {
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  if (diffInSeconds < 3600) {
-    const mins = Math.max(1, Math.floor(diffInSeconds / 60));
-    return `${mins} ${mins === 1 ? 'minute' : 'minutes'} ago`;
+  if (diffInSeconds < 60) {
+    return 'just now';
   }
-  if (diffInSeconds < 86_400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes} min ago`;
   }
-  const days = Math.floor(diffInSeconds / 86_400);
-  return `${days} ${days === 1 ? 'day' : 'days'} ago`;
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) {
+    return `${diffInHours} ${diffInHours === 1 ? 'hour ago' : 'hours ago'}`;
+  }
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) {
+    return `${diffInDays} ${diffInDays === 1 ? 'day ago' : 'days ago'}`;
+  }
+
+  const diffInWeeks = Math.floor(diffInDays / 7);
+  if (diffInWeeks < 4.34) {
+    return `${diffInWeeks} ${diffInWeeks === 1 ? 'week ago' : 'weeks ago'}`;
+  }
+
+  const diffInMonths = Math.floor(diffInDays / 30.44);
+  if (diffInMonths < 12) {
+    return `${diffInMonths} ${diffInMonths === 1 ? 'month ago' : 'months ago'}`;
+  }
+
+  const diffInYears = Math.floor(diffInDays / 365.25);
+  return `${diffInYears} ${diffInYears === 1 ? 'year ago' : 'years ago'}`;
 };
 
 const getAvatarColor = (name: string): string => {
@@ -139,31 +170,38 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
     dialog.querySelector('.game-dialog__close-error-btn')?.addEventListener('click', close);
   };
 
-  const renderContent = (gameData: GameDetails): void => {
-    const topRecords: GameRecord[] =
-      gameData.topRecords && gameData.topRecords.length > 0 ? gameData.topRecords : DEFAULT_RECORDS;
+  const renderCommentsSection = (comments: RawCommentItem[], totalCount: number, commentsContainer: HTMLElement): void => {
+    const titleEl = commentsContainer.querySelector('.game-dialog__comments-title');
+    const listEl = commentsContainer.querySelector('.game-dialog__comments-list');
+    if (!listEl) return;
 
-    const rawComments: RawCommentItem[] =
-      gameData.comments && gameData.comments.length > 0 ? gameData.comments : DEFAULT_COMMENTS;
+    let finalComments = comments;
+    let finalTotal = totalCount;
 
-    const recordsHtml = topRecords
-      .map(
-        (rec) => `
-        <li class="game-dialog__record-item">
-          <span class="game-dialog__record-user">${getTrophyEmoji(rec.position)} ${rec.playerName}</span>
-          <span class="game-dialog__record-score">${formatScore(rec.score)}</span>
-          <span class="game-dialog__record-date">${formatRelativeTime(rec.achievedAt)}</span>
-        </li>
-      `
-      )
-      .join('');
+    if ((!finalComments || finalComments.length === 0) && SEED_COMMENTS[gameSlug]) {
+      finalComments = SEED_COMMENTS[gameSlug];
+      finalTotal = finalComments.length;
+    }
 
-    const commentsHtml = rawComments
+    if (titleEl) {
+      titleEl.textContent = `Comments (${finalTotal})`;
+    }
+
+    if (!finalComments || finalComments.length === 0) {
+      listEl.innerHTML = `
+        <div class="game-dialog__empty-comments">
+          <p style="opacity: 0.7; padding: 1rem 0;">No comments yet. Be the first to comment!</p>
+        </div>
+      `;
+      return;
+    }
+
+    listEl.innerHTML = finalComments
       .map((comment) => {
         const authorName = comment.author || comment.authorName || comment.userName || 'Anonymous';
-        const text = comment.text || comment.content || '';
+        const text = comment.text || comment.content || comment.comment || '';
         const likes = comment.likesCount ?? comment.likes ?? 0;
-        const rawDate = comment.createdAt || comment.timestamp;
+        const rawDate = comment.createdAt || comment.timestamp || comment.date;
         const displayTime = formatRelativeTime(rawDate);
         const bg = comment.avatarBg || getAvatarColor(authorName);
         const initial = authorName.charAt(0).toUpperCase();
@@ -195,11 +233,31 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
         `;
       })
       .join('');
+  };
+
+  const renderContent = (gameData: GameDetails): void => {
+    const topRecords: GameRecord[] = gameData.topRecords || [];
+
+    const recordsHtml = topRecords.length > 0
+      ? topRecords
+          .map(
+            (rec) => `
+            <li class="game-dialog__record-item">
+              <span class="game-dialog__record-user">${getTrophyEmoji(rec.position)} ${rec.playerName}</span>
+              <span class="game-dialog__record-score">${formatScore(rec.score)}</span>
+              <span class="game-dialog__record-date">${formatRelativeTime(rec.achievedAt)}</span>
+            </li>
+          `
+          )
+          .join('')
+      : `<li class="game-dialog__record-item" style="opacity: 0.7;">No records achieved yet.</li>`;
+
+    const heroImgUrl = gameData.heroImage || gameData.cardImage;
 
     dialog.innerHTML = `
       <header class="game-dialog__hero">
         <img 
-          src="${gameData.heroImage || gameData.cardImage}" 
+          src="${heroImgUrl}" 
           alt="${gameData.name} Cover" 
           class="game-dialog__hero-img"
         />
@@ -279,7 +337,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
         </section>
 
         <section class="game-dialog__section game-dialog__comments-section">
-          <h3 class="game-dialog__section-title">Comments (${rawComments.length})</h3>
+          <h3 class="game-dialog__section-title game-dialog__comments-title">Comments (...)</h3>
           
           <form class="game-dialog__comment-form">
             <div class="game-dialog__avatar game-dialog__avatar--user">U</div>
@@ -298,18 +356,29 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
           </form>
 
           <ul class="game-dialog__comments-list">
-            ${commentsHtml}
+            <div class="game-dialog__comments-skeleton">Loading comments...</div>
           </ul>
         </section>
       </div>
     `;
 
+    const imgEl = dialog.querySelector('.game-dialog__hero-img') as HTMLImageElement | null;
+    if (imgEl) {
+      imgEl.addEventListener(
+        'error',
+        () => {
+          imgEl.src = 'https://placehold.co/600x350/1e1e1e/ffffff?text=No+Image';
+        },
+        { once: true }
+      );
+    }
+
     const closeBtn = dialog.querySelector('.game-dialog__close');
     const playBtn = dialog.querySelector('.game-dialog__play-btn');
     const favBtn = dialog.querySelector('.game-dialog__fav-btn');
-    const likeBtns = dialog.querySelectorAll('.game-dialog__like-btn');
     const commentForm = dialog.querySelector('.game-dialog__comment-form');
     const textarea = dialog.querySelector('.game-dialog__textarea') as HTMLTextAreaElement | null;
+    const commentsContainer = dialog.querySelector('.game-dialog__comments-section') as HTMLElement | null;
 
     closeBtn?.addEventListener('click', close);
 
@@ -333,15 +402,24 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
       e.preventDefault();
     });
 
-    for (const btn of likeBtns) {
-      btn.addEventListener('click', () => {
-        const isNowActive = btn.classList.toggle('game-dialog__like-btn--active');
-        const svg = btn.querySelector('svg');
-        if (svg) {
-          svg.setAttribute('fill', 'none');
-          svg.setAttribute('stroke', isNowActive ? '#ff4b4b' : '#18152e');
-        }
-      });
+    if (commentsContainer) {
+      loadComments(commentsContainer);
+    }
+  };
+
+  const loadComments = async (commentsContainer: HTMLElement): Promise<void> => {
+    try {
+      const response = await fetchGameComments(gameSlug, 3, 'newest');
+      const comments = response.data || [];
+      const totalCount = response.totalCount ?? comments.length;
+      renderCommentsSection(comments, totalCount, commentsContainer);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to load comments';
+      showSnackbar(msg, 'error');
+      const listEl = commentsContainer.querySelector('.game-dialog__comments-list');
+      if (listEl) {
+        listEl.innerHTML = `<div class="game-dialog__comments-error">Unable to load comments.</div>`;
+      }
     }
   };
 
@@ -362,12 +440,16 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
   return backdrop;
 };
 
-export const openGameDetailsDialog = (gameSlug?: string): void => {
+export const openGameDetailsDialog = (gameSlug: string): void => {
+  if (!gameSlug) {
+    console.error('openGameDetailsDialog requires a valid gameSlug parameter!');
+    return;
+  }
+
   const existingDialog = document.querySelector('.game-dialog-backdrop');
   if (existingDialog) existingDialog.remove();
 
-  const slug = gameSlug || 'tukoni-forest-keepers';
-  const dialogElement = createGameDetailsDialog(slug);
+  const dialogElement = createGameDetailsDialog(gameSlug);
   document.body.append(dialogElement);
   document.body.classList.add('no-scroll');
 };
