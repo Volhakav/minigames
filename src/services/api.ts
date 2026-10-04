@@ -29,9 +29,59 @@ export interface GamesApiResponse {
   };
 }
 
+export interface GameRecord {
+  position: number;
+  playerName: string;
+  score: number;
+  achievedAt: string;
+}
+
+export interface RawCommentItem {
+  id?: string;
+  author?: string;
+  authorName?: string;
+  userName?: string;
+  avatarBg?: string;
+  createdAt?: string;
+  timestamp?: string;
+  text?: string;
+  content?: string;
+  likesCount?: number;
+  likes?: number;
+  isLikedByCurrentUser?: boolean;
+  isLiked?: boolean;
+  liked?: boolean;
+}
+
+export interface GameDetails {
+  slug: string;
+  name: string;
+  category: string;
+  price: string;
+  shortDescription: string;
+  description?: string;
+  rating: number;
+  likesCount: number;
+  isLiked?: boolean;
+  cardImage: string;
+  heroImage?: string;
+  galleryImages?: string[];
+  developer?: string;
+  releaseDate?: string;
+  featured?: boolean;
+  topRecords?: GameRecord[];
+  comments?: RawCommentItem[];
+  specs?: {
+    genre?: string;
+    players?: string;
+    duration?: string;
+    price?: string;
+  };
+}
+
 export const resolveApiImageUrl = (rawPath?: string): string => {
   if (!rawPath || typeof rawPath !== 'string') {
-    return 'https://placehold.co/300x380/1e1e1e/ffffff?text=No+Image';
+    return 'https://placehold.co/600x350/1e1e1e/ffffff?text=No+Image';
   }
 
   if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
@@ -69,9 +119,9 @@ export const fetchFeaturedGames = async (): Promise<GameData[]> => {
   return rawList.map((game: Record<string, unknown>) => {
     const rawImage =
       (game.cardImage as string) ||
+      (game.heroImage as string) ||
       (game.coverImage as string) ||
       (game.image as string) ||
-      (game.heroImage as string) ||
       '';
 
     return {
@@ -108,7 +158,12 @@ export const fetchLibraryGames = async (params: FetchGamesParams = {}): Promise<
   const rawList = Array.isArray(result) ? result : result.data || [];
 
   const formattedGames: GameData[] = rawList.map((game: Record<string, unknown>) => {
-    const rawImage = (game.cardImage as string) || (game.coverImage as string) || (game.image as string) || '';
+    const rawImage =
+      (game.cardImage as string) ||
+      (game.heroImage as string) ||
+      (game.coverImage as string) ||
+      (game.image as string) ||
+      '';
 
     return {
       slug: (game.slug as string) || '',
@@ -126,6 +181,69 @@ export const fetchLibraryGames = async (params: FetchGamesParams = {}): Promise<
   return {
     data: formattedGames,
     meta: result.meta,
+  };
+};
+
+export const fetchGameDetails = async (gameSlug: string, userEmail?: string): Promise<GameDetails> => {
+  const queryParams = new URLSearchParams();
+  if (userEmail) {
+    queryParams.append('userEmail', userEmail);
+  }
+
+  const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const response = await fetch(`${API_BASE_URL}/api/games/${gameSlug}${queryString}`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to load game details for "${gameSlug}" (Status: ${response.status})`);
+  }
+
+  const result = await response.json();
+  const game = result.data || result;
+
+  const rawCardImage =
+    (game.cardImage as string) ||
+    (game.heroImage as string) ||
+    (game.coverImage as string) ||
+    (game.image as string) ||
+    '';
+
+  const rawHeroImage =
+    (game.heroImage as string) ||
+    (game.bannerImage as string) ||
+    (game.cardImage as string) ||
+    (game.coverImage as string) ||
+    '';
+
+  return {
+    slug: (game.slug as string) || gameSlug,
+    name: (game.name as string) || (game.title as string) || 'Untitled Game',
+    category: (game.category as string) || 'Casual',
+    price: (game.price as string) || (game.specs?.price as string) || 'Free',
+    shortDescription: (game.shortDescription as string) || '',
+    description:
+      (game.description as string) ||
+      (game.fullDescription as string) ||
+      (game.shortDescription as string) ||
+      'No description available.',
+    rating: (game.rating as number) || 0,
+    likesCount: (game.likesCount as number) || 0,
+    isLiked: Boolean(game.isLiked || game.isLikedByCurrentUser),
+    cardImage: resolveApiImageUrl(rawCardImage),
+    heroImage: resolveApiImageUrl(rawHeroImage),
+    galleryImages: Array.isArray(game.galleryImages)
+      ? game.galleryImages.map((img: string) => resolveApiImageUrl(img))
+      : [],
+    developer: (game.developer as string) || 'Unknown Developer',
+    releaseDate: (game.releaseDate as string) || 'N/A',
+    featured: Boolean(game.featured),
+    topRecords: Array.isArray(game.topRecords) ? game.topRecords : [],
+    comments: Array.isArray(game.comments) ? game.comments : [],
+    specs: game.specs || {
+      genre: (game.category as string) || 'Casual',
+      players: '1 Player',
+      duration: '15-30 mins',
+      price: (game.price as string) || 'Free',
+    },
   };
 };
 
