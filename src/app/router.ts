@@ -76,11 +76,25 @@ export class Router {
       return;
     }
 
-    const rawPath: string = window.location.pathname;
-    const path: string = rawPath === '/home' || rawPath === '' ? '/' : rawPath;
+    const rawBase = import.meta.env.BASE_URL || '/';
+    const basePath = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
 
-    const renderFunction: (() => HTMLElement) | undefined =
-      this.routes[path] || this.routes['/404'] || this.routes['/'];
+    let path: string = window.location.pathname;
+
+  
+    if (path.length > 1 && path.endsWith('/')) {
+      path = path.slice(0, -1);
+    }
+
+    if (path === basePath || path === '') {
+      path = basePath || '/';
+    }
+    let renderFunction: (() => HTMLElement) | undefined = this.routes[path];
+
+    if (!renderFunction) {
+      const notFoundKey = `${basePath}/404`;
+      renderFunction = this.routes[notFoundKey] || this.routes['/404'];
+    }
 
     this.appRoot.innerHTML = '';
     if (renderFunction) {
