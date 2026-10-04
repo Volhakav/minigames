@@ -1,11 +1,14 @@
-interface IRoute {
+export interface IRoute {
   path: string;
   render: () => HTMLElement;
 }
 
+type RouterCallback = (params: Record<string, string>) => void;
+
 export class Router {
   private readonly routes: Record<string, () => HTMLElement> = {};
   private appRoot?: HTMLElement;
+  private readonly routeChangeListeners: RouterCallback[] = [];
 
   constructor(routes: IRoute[]) {
     for (const route of routes) {
@@ -13,6 +16,17 @@ export class Router {
     }
 
     window.addEventListener('popstate', () => this.handleRoute());
+
+    document.addEventListener('click', (e) => {
+      const target = (e.target as HTMLElement).closest('a[data-link]');
+      if (target) {
+        e.preventDefault();
+        const href = target.getAttribute('href');
+        if (href) {
+          this.navigate(href);
+        }
+      }
+    });
   }
 
   public init(rootElement: HTMLElement): void {
@@ -20,9 +34,41 @@ export class Router {
     this.handleRoute();
   }
 
-  public navigate(path: string): void {
-    window.history.pushState({}, '', path);
+  public navigate(path: string, replace = false): void {
+    if (replace) {
+      window.history.replaceState({}, '', path);
+    } else {
+      window.history.pushState({}, '', path);
+    }
     this.handleRoute();
+  }
+
+  public updateQueryParams(newParams: Record<string, string | undefined>, replace = false): void {
+    const url = new URL(window.location.href);
+
+    for (const [key, value] of Object.entries(newParams)) {
+      if (value === undefined || value === '') {
+        url.searchParams.delete(key);
+      } else {
+        url.searchParams.set(key, value);
+      }
+    }
+
+    const targetUrl = url.pathname + url.search;
+    this.navigate(targetUrl, replace);
+  }
+
+  public getQueryParams(): Record<string, string> {
+    const searchParams = new URLSearchParams(window.location.search);
+    const params: Record<string, string> = {};
+    for (const [key, value] of searchParams.entries()) {
+      params[key] = value;
+    }
+    return params;
+  }
+
+  public onRouteChange(callback: RouterCallback): void {
+    this.routeChangeListeners.push(callback);
   }
 
   private handleRoute(): void {
@@ -30,13 +76,34 @@ export class Router {
       return;
     }
 
-    const path: string = window.location.pathname;
-    const renderFunction: (() => HTMLElement) | undefined =
-      this.routes[path] || this.routes['/404'];
+    const rawBase = import.meta.env.BASE_URL || '/';
+    const basePath = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
+
+    let path: string = window.location.pathname;
+
+    if (path.length > 1 && path.endsWith('/')) {
+      path = path.slice(0, -1);
+    }
+
+    if (path === basePath || path === '') {
+      path = basePath || '/';
+    }
+
+    let renderFunction: (() => HTMLElement) | undefined = this.routes[path];
+
+    if (!renderFunction) {
+      const notFoundKey = `${basePath}/404`;
+      renderFunction = this.routes[notFoundKey] || this.routes['/404'];
+    }
 
     this.appRoot.innerHTML = '';
     if (renderFunction) {
       this.appRoot.append(renderFunction());
+    }
+
+    const currentParams = this.getQueryParams();
+    for (const callback of this.routeChangeListeners) {
+      callback(currentParams);
     }
   }
 }
