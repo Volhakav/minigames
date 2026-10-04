@@ -6,35 +6,7 @@ import {
   RawCommentItem,
 } from '../services/api';
 import { showSnackbar } from './snackbar';
-
-const SEED_COMMENTS: Record<string, RawCommentItem[]> = {
-  'tukoni-forest-keepers': [
-    {
-      id: '1',
-      author: 'ForestExplorer',
-      text: 'Such a relaxing game! Love the art style and soundtrack.',
-      likesCount: 14,
-      createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-      isLikedByCurrentUser: true,
-    },
-    {
-      id: '2',
-      author: 'CottageCoreFan',
-      text: 'The puzzles are very intuitive. Perfect for cozy evenings!',
-      likesCount: 8,
-      createdAt: new Date(Date.now() - 1000 * 3600 * 5).toISOString(),
-      isLikedByCurrentUser: false,
-    },
-    {
-      id: '3',
-      author: 'HerbalGatherer',
-      text: 'Found all hidden secrets in the first area!',
-      likesCount: 5,
-      createdAt: new Date(Date.now() - 1000 * 86400 * 3).toISOString(),
-      isLikedByCurrentUser: false,
-    },
-  ],
-};
+import { appRouter } from '../index';
 
 const formatLikes = (count: number): string => {
   if (count >= 1000) {
@@ -114,13 +86,17 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
 
   let isClosing = false;
 
-  const close = (): void => {
+  const close = (updateUrl = true): void => {
     if (isClosing) return;
     isClosing = true;
 
     backdrop.classList.add('game-dialog-backdrop--closing');
     document.body.classList.remove('no-scroll');
     document.removeEventListener('keydown', handleKeyDown);
+
+    if (updateUrl) {
+      appRouter.updateQueryParams({ game: null });
+    }
 
     setTimeout(() => {
       backdrop.remove();
@@ -167,7 +143,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
       loadData();
     });
 
-    dialog.querySelector('.game-dialog__close-error-btn')?.addEventListener('click', close);
+    dialog.querySelector('.game-dialog__close-error-btn')?.addEventListener('click', () => close());
   };
 
   const renderCommentsSection = (comments: RawCommentItem[], totalCount: number, commentsContainer: HTMLElement): void => {
@@ -175,19 +151,11 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
     const listEl = commentsContainer.querySelector('.game-dialog__comments-list');
     if (!listEl) return;
 
-    let finalComments = comments;
-    let finalTotal = totalCount;
-
-    if ((!finalComments || finalComments.length === 0) && SEED_COMMENTS[gameSlug]) {
-      finalComments = SEED_COMMENTS[gameSlug];
-      finalTotal = finalComments.length;
-    }
-
     if (titleEl) {
-      titleEl.textContent = `Comments (${finalTotal})`;
+      titleEl.textContent = `Comments (${totalCount})`;
     }
 
-    if (!finalComments || finalComments.length === 0) {
+    if (!comments || comments.length === 0) {
       listEl.innerHTML = `
         <div class="game-dialog__empty-comments">
           <p style="opacity: 0.7; padding: 1rem 0;">No comments yet. Be the first to comment!</p>
@@ -196,7 +164,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
       return;
     }
 
-    listEl.innerHTML = finalComments
+    listEl.innerHTML = comments
       .map((comment) => {
         const authorName = comment.author || comment.authorName || comment.userName || 'Anonymous';
         const text = comment.text || comment.content || comment.comment || '';
@@ -380,7 +348,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
     const textarea = dialog.querySelector('.game-dialog__textarea') as HTMLTextAreaElement | null;
     const commentsContainer = dialog.querySelector('.game-dialog__comments-section') as HTMLElement | null;
 
-    closeBtn?.addEventListener('click', close);
+    closeBtn?.addEventListener('click', () => close());
 
     playBtn?.addEventListener('click', (e) => {
       e.preventDefault();
@@ -440,7 +408,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
   return backdrop;
 };
 
-export const openGameDetailsDialog = (gameSlug: string): void => {
+export const openGameDetailsDialog = (gameSlug: string, updateUrl = true): void => {
   if (!gameSlug) {
     console.error('openGameDetailsDialog requires a valid gameSlug parameter!');
     return;
@@ -449,7 +417,19 @@ export const openGameDetailsDialog = (gameSlug: string): void => {
   const existingDialog = document.querySelector('.game-dialog-backdrop');
   if (existingDialog) existingDialog.remove();
 
+  if (updateUrl) {
+    appRouter.updateQueryParams({ game: gameSlug });
+  }
+
   const dialogElement = createGameDetailsDialog(gameSlug);
   document.body.append(dialogElement);
   document.body.classList.add('no-scroll');
+};
+
+export const closeGameDetailsDialogQuietly = (): void => {
+  const existingDialog = document.querySelector('.game-dialog-backdrop');
+  if (existingDialog) {
+    document.body.classList.remove('no-scroll');
+    existingDialog.remove();
+  }
 };
