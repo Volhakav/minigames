@@ -44,13 +44,20 @@ export interface RawCommentItem {
   avatarBg?: string;
   createdAt?: string;
   timestamp?: string;
+  date?: string;
   text?: string;
   content?: string;
+  comment?: string;
   likesCount?: number;
   likes?: number;
   isLikedByCurrentUser?: boolean;
   isLiked?: boolean;
   liked?: boolean;
+}
+
+export interface CommentsApiResponse {
+  data: RawCommentItem[];
+  totalCount: number;
 }
 
 export interface GameDetails {
@@ -244,6 +251,55 @@ export const fetchGameDetails = async (gameSlug: string, userEmail?: string): Pr
       duration: '15-30 mins',
       price: (game.price as string) || 'Free',
     },
+  };
+};
+
+export const fetchGameComments = async (
+  gameSlug: string,
+  limit = 3,
+  sort = 'newest'
+): Promise<CommentsApiResponse> => {
+  const queryParams = new URLSearchParams({
+    limit: limit.toString(),
+    sort,
+  });
+
+  const response = await fetch(`${API_BASE_URL}/api/games/${gameSlug}/comments?${queryParams.toString()}`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to load comments for "${gameSlug}" (Status: ${response.status})`);
+  }
+
+  const result = await response.json();
+
+  let commentsList: RawCommentItem[] = [];
+  let total = 0;
+
+  if (Array.isArray(result)) {
+    commentsList = result;
+    total = result.length;
+  } else if (Array.isArray(result.items)) {
+    commentsList = result.items;
+    total = result.totalItems ?? result.total ?? result.count ?? result.items.length;
+  } else if (result.data) {
+    if (Array.isArray(result.data)) {
+      commentsList = result.data;
+      total = result.meta?.totalItems ?? result.meta?.total ?? result.totalCount ?? result.data.length;
+    } else if (Array.isArray(result.data.items)) {
+      commentsList = result.data.items;
+      total = result.data.totalItems ?? result.data.total ?? result.meta?.totalItems ?? result.data.items.length;
+    } else if (Array.isArray(result.data.comments)) {
+      commentsList = result.data.comments;
+      total = result.data.totalComments ?? result.data.comments.length;
+    }
+  } else if (Array.isArray(result.comments)) {
+    commentsList = result.comments;
+    total = result.totalComments ?? result.comments.length;
+  }
+
+  return {
+    data: commentsList,
+    totalCount: total,
   };
 };
 
