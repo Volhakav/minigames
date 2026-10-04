@@ -1,11 +1,12 @@
-export interface PaginationOptions {
-  totalPages?: number;
-  initialPage?: number;
+export interface PaginationProps {
+  totalPages: number;
+  currentPage: number;
+  onPageChange: (newPage: number) => void;
 }
 
-export const createLibraryPagination = (options: PaginationOptions = {}): HTMLElement => {
-  const totalPages = options.totalPages || 5;
-  let currentPage = options.initialPage || 1;
+export const createLibraryPagination = ({ totalPages, currentPage, onPageChange }: PaginationProps): HTMLElement => {
+  const effectiveTotalPages = Math.max(1, totalPages);
+  const activePage = Math.min(Math.max(1, currentPage), effectiveTotalPages);
 
   const section = document.createElement('section');
   section.className = 'library-pagination';
@@ -19,11 +20,11 @@ export const createLibraryPagination = (options: PaginationOptions = {}): HTMLEl
     const limit = isMobile() ? 3 : 4;
     const pages: number[] = [];
 
-    let start = Math.max(1, currentPage - Math.floor(limit / 2));
+    let start = Math.max(1, activePage - Math.floor(limit / 2));
     let end = start + limit - 1;
 
-    if (end > totalPages) {
-      end = totalPages;
+    if (end > effectiveTotalPages) {
+      end = effectiveTotalPages;
       start = Math.max(1, end - limit + 1);
     }
 
@@ -37,6 +38,7 @@ export const createLibraryPagination = (options: PaginationOptions = {}): HTMLEl
   const renderPagination = (): void => {
     container.innerHTML = '';
 
+    // Przycisk poprzedniej strony
     const prevBtn = document.createElement('button');
     prevBtn.type = 'button';
     prevBtn.className = 'library-pagination__arrow library-pagination__arrow--prev';
@@ -47,37 +49,37 @@ export const createLibraryPagination = (options: PaginationOptions = {}): HTMLEl
       </svg>
     `;
 
-    if (currentPage === 1) {
+    if (activePage === 1) {
       prevBtn.disabled = true;
       prevBtn.classList.add('library-pagination__arrow--disabled');
     }
 
     prevBtn.addEventListener('click', () => {
-      if (currentPage > 1) {
-        currentPage -= 1;
-        renderPagination();
+      if (activePage > 1) {
+        onPageChange(activePage - 1);
       }
     });
 
     container.append(prevBtn);
 
+    // Przycisk widocznych stron
     const visiblePages = getVisiblePages();
     for (const page of visiblePages) {
       const pageBtn = document.createElement('button');
       pageBtn.type = 'button';
-      pageBtn.className = `library-pagination__page${page === currentPage ? ' library-pagination__page--active' : ''}`;
+      pageBtn.className = `library-pagination__page${page === activePage ? ' library-pagination__page--active' : ''}`;
       pageBtn.textContent = page.toString();
 
       pageBtn.addEventListener('click', () => {
-        if (currentPage !== page) {
-          currentPage = page;
-          renderPagination();
+        if (activePage !== page) {
+          onPageChange(page);
         }
       });
 
       container.append(pageBtn);
     }
 
+    // Przycisk następnej strony
     const nextBtn = document.createElement('button');
     nextBtn.type = 'button';
     nextBtn.className = 'library-pagination__arrow library-pagination__arrow--next';
@@ -88,15 +90,14 @@ export const createLibraryPagination = (options: PaginationOptions = {}): HTMLEl
       </svg>
     `;
 
-    if (currentPage === totalPages) {
+    if (activePage === effectiveTotalPages) {
       nextBtn.disabled = true;
       nextBtn.classList.add('library-pagination__arrow--disabled');
     }
 
     nextBtn.addEventListener('click', () => {
-      if (currentPage < totalPages) {
-        currentPage += 1;
-        renderPagination();
+      if (activePage < effectiveTotalPages) {
+        onPageChange(activePage + 1);
       }
     });
 
