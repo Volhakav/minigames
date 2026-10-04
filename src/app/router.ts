@@ -8,7 +8,7 @@ type RouterCallback = (params: Record<string, string>) => void;
 export class Router {
   private readonly routes: Record<string, () => HTMLElement> = {};
   private appRoot?: HTMLElement;
-  private routeChangeListeners: RouterCallback[] = [];
+  private readonly routeChangeListeners: RouterCallback[] = [];
 
   constructor(routes: IRoute[]) {
     for (const route of routes) {
@@ -43,11 +43,11 @@ export class Router {
     this.handleRoute();
   }
 
-  public updateQueryParams(newParams: Record<string, string | null>, replace = false): void {
+  public updateQueryParams(newParams: Record<string, string | undefined>, replace = false): void {
     const url = new URL(window.location.href);
 
     for (const [key, value] of Object.entries(newParams)) {
-      if (value === null || value === undefined || value === '') {
+      if (value === undefined || value === '') {
         url.searchParams.delete(key);
       } else {
         url.searchParams.set(key, value);
@@ -61,9 +61,9 @@ export class Router {
   public getQueryParams(): Record<string, string> {
     const searchParams = new URLSearchParams(window.location.search);
     const params: Record<string, string> = {};
-    searchParams.forEach((value, key) => {
+    for (const [key, value] of searchParams.entries()) {
       params[key] = value;
-    });
+    }
     return params;
   }
 
@@ -76,11 +76,25 @@ export class Router {
       return;
     }
 
-    const rawPath: string = window.location.pathname;
-    const path: string = rawPath === '/home' || rawPath === '' ? '/' : rawPath;
+    const rawBase = import.meta.env.BASE_URL || '/';
+    const basePath = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
 
-    const renderFunction: (() => HTMLElement) | undefined =
-      this.routes[path] || this.routes['/404'] || this.routes['/'];
+    let path: string = window.location.pathname;
+
+    if (path.length > 1 && path.endsWith('/')) {
+      path = path.slice(0, -1);
+    }
+
+    if (path === basePath || path === '') {
+      path = basePath || '/';
+    }
+
+    let renderFunction: (() => HTMLElement) | undefined = this.routes[path];
+
+    if (!renderFunction) {
+      const notFoundKey = `${basePath}/404`;
+      renderFunction = this.routes[notFoundKey] || this.routes['/404'];
+    }
 
     this.appRoot.innerHTML = '';
     if (renderFunction) {

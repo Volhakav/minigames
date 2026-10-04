@@ -58,6 +58,13 @@ export const createCarouselSection = (): HTMLElement => {
 
   let autoplayTimer: number | undefined;
 
+  const stopAutoplay = () => {
+    if (autoplayTimer !== undefined) {
+      clearInterval(autoplayTimer);
+      autoplayTimer = undefined;
+    }
+  };
+
   const renderSkeleton = () => {
     contentArea.innerHTML = `
       <div class="carousel-section__skeleton-container">
@@ -170,13 +177,6 @@ export const createCarouselSection = (): HTMLElement => {
       updateCarousel();
     };
 
-    const stopAutoplay = () => {
-      if (autoplayTimer !== undefined) {
-        clearInterval(autoplayTimer);
-        autoplayTimer = undefined;
-      }
-    };
-
     const startAutoplay = () => {
       stopAutoplay();
       autoplayTimer = window.setInterval(nextSlide, 4000);
@@ -187,15 +187,15 @@ export const createCarouselSection = (): HTMLElement => {
       startAutoplay();
     };
 
-    prevBtn.onclick = () => {
+    prevBtn.addEventListener('click', () => {
       prevSlide();
       resetAutoplay();
-    };
+    });
 
-    nextBtn.onclick = () => {
+    nextBtn.addEventListener('click', () => {
       nextSlide();
       resetAutoplay();
-    };
+    });
 
     trackContainer.addEventListener('pointerdown', (e: PointerEvent) => {
       isPointerDown = true;
@@ -220,7 +220,11 @@ export const createCarouselSection = (): HTMLElement => {
         if (diff < -40) {
           nextSlide();
         } else {
-          diff > 40 ? prevSlide() : updateCarousel();
+          if (diff > 40) {
+            prevSlide();
+          } else {
+            updateCarousel();
+          }
         }
         resetAutoplay();
       } else {
@@ -238,11 +242,7 @@ export const createCarouselSection = (): HTMLElement => {
   };
 
   const loadGames = async () => {
-    if (autoplayTimer !== undefined) {
-      clearInterval(autoplayTimer);
-      autoplayTimer = undefined;
-    }
-
+    stopAutoplay();
     renderSkeleton();
 
     try {

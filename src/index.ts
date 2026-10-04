@@ -5,16 +5,66 @@ import { createLibraryPage } from './pages/library-page';
 import { createNotFoundPage } from './pages/not-found-page';
 import { openGameDetailsDialog, closeGameDetailsDialogQuietly } from './components/game-details-dialog';
 
-let currentGameModal: string | null = null;
+let currentGameModal: string | undefined;
 
 const rawBase = import.meta.env.BASE_URL || '/';
-const basePath = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
+export const basePath = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
+
+const createHeader = (): HTMLElement => {
+  const header = document.createElement('header');
+  header.className = 'main-header';
+
+  const rawPath = window.location.pathname;
+  const isLibrary = rawPath.includes('/library');
+  const homeActiveClass = isLibrary ? '' : ' main-header__link--active';
+  const libraryActiveClass = isLibrary ? ' main-header__link--active' : '';
+
+  header.innerHTML = `
+    <nav class="main-header__nav">
+      <a href="${basePath || '/'}" data-link class="main-header__link${homeActiveClass}">Home</a>
+      <a href="${basePath}/library" data-link class="main-header__link${libraryActiveClass}">Library</a>
+    </nav>
+  `;
+
+  return header;
+};
+
+const createFooter = (): HTMLElement => {
+  const footer = document.createElement('footer');
+  footer.className = 'main-footer';
+  footer.innerHTML = `
+    <div class="main-footer__container">
+      <p>&copy; ${new Date().getFullYear()} MiniGames SPA. All rights reserved.</p>
+    </div>
+  `;
+  return footer;
+};
 
 export const appRouter = new Router([
-  { path: basePath || '/', render: createHomePage },
-  { path: `${basePath}/`, render: createHomePage },
-  { path: `${basePath}/library`, render: createLibraryPage },
-  { path: `${basePath}/404`, render: createNotFoundPage },
+  {
+    path: basePath || '/',
+    render: () => {
+      const pageWrapper = document.createElement('div');
+      pageWrapper.append(createHeader(), createHomePage(), createFooter());
+      return pageWrapper;
+    },
+  },
+  {
+    path: `${basePath}/library`,
+    render: () => {
+      const pageWrapper = document.createElement('div');
+      pageWrapper.append(createHeader(), createLibraryPage(), createFooter());
+      return pageWrapper;
+    },
+  },
+  {
+    path: `${basePath}/404`,
+    render: () => {
+      const pageWrapper = document.createElement('div');
+      pageWrapper.append(createHeader(), createNotFoundPage(), createFooter());
+      return pageWrapper;
+    },
+  },
 ]);
 
 appRouter.onRouteChange((queryParams) => {
@@ -26,7 +76,7 @@ appRouter.onRouteChange((queryParams) => {
     }
   } else {
     if (currentGameModal) {
-      currentGameModal = null;
+      currentGameModal = undefined;
       closeGameDetailsDialogQuietly();
     }
   }
@@ -44,7 +94,7 @@ const appInit = (): void => {
   window.addEventListener('navigate', (e: Event) => {
     const customEvent = e as CustomEvent<'home' | 'library'>;
     const page = customEvent.detail;
-    const targetPath = page === 'home' ? `${basePath}/` : `${basePath}/${page}`;
+    const targetPath = page === 'home' ? `${basePath || '/'}` : `${basePath}/${page}`;
     appRouter.navigate(targetPath);
   });
 
