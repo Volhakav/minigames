@@ -219,12 +219,10 @@ export const createCarouselSection = (): HTMLElement => {
       if (isDragging) {
         if (diff < -40) {
           nextSlide();
+        } else if (diff > 40) {
+          prevSlide();
         } else {
-          if (diff > 40) {
-            prevSlide();
-          } else {
-            updateCarousel();
-          }
+          updateCarousel();
         }
         resetAutoplay();
       } else {

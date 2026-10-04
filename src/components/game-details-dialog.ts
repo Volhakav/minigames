@@ -413,8 +413,13 @@ export const openGameDetailsDialog = (gameSlug: string, updateUrl = true): void 
     return;
   }
 
-  const existingDialog = document.querySelector('.game-dialog-backdrop');
-  if (existingDialog) existingDialog.remove();
+  const existingBackdrop = document.querySelector('.game-dialog-backdrop');
+  if (existingBackdrop) {
+    if (updateUrl) {
+      appRouter.updateQueryParams({ game: gameSlug });
+    }
+    return;
+  }
 
   if (updateUrl) {
     appRouter.updateQueryParams({ game: gameSlug });

@@ -12,20 +12,7 @@ export const basePath = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
 
 const createHeader = (): HTMLElement => {
   const header = document.createElement('header');
-  header.className = 'main-header';
-
-  const rawPath = window.location.pathname;
-  const isLibrary = rawPath.includes('/library');
-  const homeActiveClass = isLibrary ? '' : ' main-header__link--active';
-  const libraryActiveClass = isLibrary ? ' main-header__link--active' : '';
-
-  header.innerHTML = `
-    <nav class="main-header__nav">
-      <a href="${basePath || '/'}" data-link class="main-header__link${homeActiveClass}">Home</a>
-      <a href="${basePath}/library" data-link class="main-header__link${libraryActiveClass}">Library</a>
-    </nav>
-  `;
-
+  header.className = 'main-header-wrapper';
   return header;
 };
 
