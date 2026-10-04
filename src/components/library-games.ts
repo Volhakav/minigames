@@ -2,6 +2,7 @@ import { openGameDetailsDialog } from './game-details-dialog';
 import { fetchLibraryGames, resolveApiImageUrl } from '../services/api';
 import { showSnackbar } from './snackbar';
 import { createLibraryPagination } from './library-pagination';
+import { appRouter } from '../index';
 
 export interface LibraryGame {
   slug: string;
@@ -142,9 +143,10 @@ export const createLibraryGamesSection = (): LibraryGamesController => {
 
   section.append(container, paginationContainer);
 
-  let currentCategory = 'all';
-  let currentSort = 'rating-desc';
-  let currentPage = 1;
+  const params = appRouter.getQueryParams();
+  let currentCategory = params.category || 'all';
+  let currentSort = params.sort || 'rating-desc';
+  let currentPage = Number.parseInt(params.page || '1', 10);
 
   const renderSkeleton = (): void => {
     container.innerHTML = `
@@ -186,8 +188,7 @@ export const createLibraryGamesSection = (): LibraryGamesController => {
       totalPages,
       currentPage: 1,
       onPageChange: (newPage) => {
-        currentPage = newPage;
-        loadGames();
+        appRouter.updateQueryParams({ page: newPage.toString() });
       },
     });
     paginationContainer.append(pagination);
@@ -209,8 +210,7 @@ export const createLibraryGamesSection = (): LibraryGamesController => {
       totalPages,
       currentPage,
       onPageChange: (newPage) => {
-        currentPage = newPage;
-        loadGames();
+        appRouter.updateQueryParams({ page: newPage.toString() });
       },
     });
     paginationContainer.append(pagination);
@@ -247,25 +247,23 @@ export const createLibraryGamesSection = (): LibraryGamesController => {
   return {
     element: section,
     updateState: ({ category, sort, page }) => {
-      let resetPage = false;
+      const newQueryParams: Record<string, string | null> = {};
 
-      if (category !== undefined && category !== currentCategory) {
-        currentCategory = category;
-        resetPage = true;
+      if (category !== undefined) {
+        newQueryParams.category = category === 'all' ? null : category;
+        newQueryParams.page = '1';
       }
 
-      if (sort !== undefined && sort !== currentSort) {
-        currentSort = sort;
-        resetPage = true;
+      if (sort !== undefined) {
+        newQueryParams.sort = sort === 'rating-desc' ? null : sort;
+        newQueryParams.page = '1';
       }
 
-      if (resetPage) {
-        currentPage = 1;
-      } else if (page !== undefined) {
-        currentPage = page;
+      if (page !== undefined) {
+        newQueryParams.page = page === 1 ? null : page.toString();
       }
 
-      loadGames();
+      appRouter.updateQueryParams(newQueryParams);
     },
   };
 };
