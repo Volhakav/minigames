@@ -95,7 +95,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
     document.removeEventListener('keydown', handleKeyDown);
 
     if (updateUrl) {
-      appRouter.updateQueryParams({ game: null });
+      appRouter.updateQueryParams({ game: undefined });
     }
 
     setTimeout(() => {
@@ -410,12 +410,16 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
 
 export const openGameDetailsDialog = (gameSlug: string, updateUrl = true): void => {
   if (!gameSlug) {
-    console.error('openGameDetailsDialog requires a valid gameSlug parameter!');
     return;
   }
 
-  const existingDialog = document.querySelector('.game-dialog-backdrop');
-  if (existingDialog) existingDialog.remove();
+  const existingBackdrop = document.querySelector('.game-dialog-backdrop');
+  if (existingBackdrop) {
+    if (updateUrl) {
+      appRouter.updateQueryParams({ game: gameSlug });
+    }
+    return;
+  }
 
   if (updateUrl) {
     appRouter.updateQueryParams({ game: gameSlug });

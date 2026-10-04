@@ -5,25 +5,14 @@ import { createLibraryPage } from './pages/library-page';
 import { createNotFoundPage } from './pages/not-found-page';
 import { openGameDetailsDialog, closeGameDetailsDialogQuietly } from './components/game-details-dialog';
 
-let currentGameModal: string | null = null;
+let currentGameModal: string | undefined;
 
 const rawBase = import.meta.env.BASE_URL || '/';
 export const basePath = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
 
 const createHeader = (): HTMLElement => {
   const header = document.createElement('header');
-  header.className = 'main-header';
-
-  const rawPath = window.location.pathname;
-  const isLibrary = rawPath.includes('/library');
-
-  header.innerHTML = `
-    <nav class="main-header__nav">
-      <a href="${basePath || '/'}" data-link class="main-header__link${!isLibrary ? ' main-header__link--active' : ''}">Home</a>
-      <a href="${basePath}/library" data-link class="main-header__link${isLibrary ? ' main-header__link--active' : ''}">Library</a>
-    </nav>
-  `;
-
+  header.className = 'main-header-wrapper';
   return header;
 };
 
@@ -74,7 +63,7 @@ appRouter.onRouteChange((queryParams) => {
     }
   } else {
     if (currentGameModal) {
-      currentGameModal = null;
+      currentGameModal = undefined;
       closeGameDetailsDialogQuietly();
     }
   }

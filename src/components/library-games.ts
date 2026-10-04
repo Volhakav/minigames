@@ -144,9 +144,9 @@ export const createLibraryGamesSection = (): LibraryGamesController => {
   section.append(container, paginationContainer);
 
   const params = appRouter.getQueryParams();
-  let currentCategory = params.category || 'all';
-  let currentSort = params.sort || 'rating-desc';
-  let currentPage = Number.parseInt(params.page || '1', 10);
+  const currentCategory = params.category || 'all';
+  const currentSort = params.sort || 'rating-desc';
+  const currentPage = Number.parseInt(params.page || '1', 10);
 
   const renderSkeleton = (): void => {
     container.innerHTML = `
@@ -247,20 +247,20 @@ export const createLibraryGamesSection = (): LibraryGamesController => {
   return {
     element: section,
     updateState: ({ category, sort, page }) => {
-      const newQueryParams: Record<string, string | null> = {};
+      const newQueryParams: Record<string, string | undefined> = {};
 
       if (category !== undefined) {
-        newQueryParams.category = category === 'all' ? null : category;
+        newQueryParams.category = category === 'all' ? undefined : category;
         newQueryParams.page = '1';
       }
 
       if (sort !== undefined) {
-        newQueryParams.sort = sort === 'rating-desc' ? null : sort;
+        newQueryParams.sort = sort === 'rating-desc' ? undefined : sort;
         newQueryParams.page = '1';
       }
 
       if (page !== undefined) {
-        newQueryParams.page = page === 1 ? null : page.toString();
+        newQueryParams.page = page === 1 ? undefined : page.toString();
       }
 
       appRouter.updateQueryParams(newQueryParams);
