@@ -1,6 +1,7 @@
 import { openGameDetailsDialog } from './game-details-dialog';
 import { fetchLibraryGames, resolveApiImageUrl } from '../services/api';
 import { showSnackbar } from './snackbar';
+import { createLibraryPagination } from './library-pagination';
 
 export interface LibraryGame {
   slug: string;
@@ -126,7 +127,7 @@ export const createLibraryGameCard = (game: LibraryGame): HTMLElement => {
 
 export interface LibraryGamesController {
   element: HTMLElement;
-  updateState: (params: { category?: string; sort?: string }) => void;
+  updateState: (params: { category?: string; sort?: string; page?: number }) => void;
 }
 
 export const createLibraryGamesSection = (): LibraryGamesController => {
@@ -136,10 +137,14 @@ export const createLibraryGamesSection = (): LibraryGamesController => {
   const container = document.createElement('div');
   container.className = 'library-games__container';
 
-  section.append(container);
+  const paginationContainer = document.createElement('div');
+  paginationContainer.className = 'library-games__pagination-wrapper';
+
+  section.append(container, paginationContainer);
 
   let currentCategory = 'all';
   let currentSort = 'rating-desc';
+  let currentPage = 1;
 
   const renderSkeleton = (): void => {
     container.innerHTML = `
@@ -161,6 +166,7 @@ export const createLibraryGamesSection = (): LibraryGamesController => {
         <button type="button" class="library-games__retry-btn">Retry</button>
       </div>
     `;
+    paginationContainer.innerHTML = '';
 
     const retryBtn = container.querySelector('.library-games__retry-btn');
     retryBtn?.addEventListener('click', () => {
@@ -168,15 +174,26 @@ export const createLibraryGamesSection = (): LibraryGamesController => {
     });
   };
 
-  const renderEmpty = (): void => {
+  const renderEmpty = (totalPages = 1): void => {
     container.innerHTML = `
       <div class="library-games__empty-state">
         <p>No games found matching your criteria.</p>
       </div>
     `;
+
+    paginationContainer.innerHTML = '';
+    const pagination = createLibraryPagination({
+      totalPages,
+      currentPage: 1,
+      onPageChange: (newPage) => {
+        currentPage = newPage;
+        loadGames();
+      },
+    });
+    paginationContainer.append(pagination);
   };
 
-  const renderGrid = (games: LibraryGame[]): void => {
+  const renderGrid = (games: LibraryGame[], totalPages: number): void => {
     container.innerHTML = '';
     const grid = document.createElement('div');
     grid.className = 'library-games__grid';
@@ -186,6 +203,17 @@ export const createLibraryGamesSection = (): LibraryGamesController => {
     }
 
     container.append(grid);
+
+    paginationContainer.innerHTML = '';
+    const pagination = createLibraryPagination({
+      totalPages,
+      currentPage,
+      onPageChange: (newPage) => {
+        currentPage = newPage;
+        loadGames();
+      },
+    });
+    paginationContainer.append(pagination);
   };
 
   const loadGames = async (): Promise<void> => {
@@ -195,15 +223,18 @@ export const createLibraryGamesSection = (): LibraryGamesController => {
       const response = await fetchLibraryGames({
         category: currentCategory,
         sort: currentSort,
+        page: currentPage,
         limit: 6,
       });
 
+      const totalPages = response.meta?.totalPages || 1;
+
       if (!response.data || response.data.length === 0) {
-        renderEmpty();
+        renderEmpty(totalPages);
         return;
       }
 
-      renderGrid(response.data as LibraryGame[]);
+      renderGrid(response.data as LibraryGame[], totalPages);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Failed to load library games';
       renderError(errorMsg);
@@ -215,9 +246,25 @@ export const createLibraryGamesSection = (): LibraryGamesController => {
 
   return {
     element: section,
-    updateState: ({ category, sort }) => {
-      if (category !== undefined) currentCategory = category;
-      if (sort !== undefined) currentSort = sort;
+    updateState: ({ category, sort, page }) => {
+      let resetPage = false;
+
+      if (category !== undefined && category !== currentCategory) {
+        currentCategory = category;
+        resetPage = true;
+      }
+
+      if (sort !== undefined && sort !== currentSort) {
+        currentSort = sort;
+        resetPage = true;
+      }
+
+      if (resetPage) {
+        currentPage = 1;
+      } else if (page !== undefined) {
+        currentPage = page;
+      }
+
       loadGames();
     },
   };
