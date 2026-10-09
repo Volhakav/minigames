@@ -1,4 +1,7 @@
+import { loginAndCreateSession, registerAndCreateSession } from '../services/auth';
+
 let activeBackdrop: HTMLElement | undefined;
+let isPending = false;
 
 const ICONS = {
   email: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`,
@@ -8,14 +11,32 @@ const ICONS = {
   google: `<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>`,
 };
 
+// UWAGA: na końcu regexów ma być zwykłe `$`, a NIE `\$`
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_CHARS_REGEX = /^[A-Za-z0-9]+$/;
 
 const handleEscPress = (event: KeyboardEvent): void => {
-  if (event.key === 'Escape') {
+  if (event.key === 'Escape' && !isPending) {
     closeAuthDialog();
   }
 };
+
+const setDialogPendingState = (backdrop: HTMLElement, pending: boolean): void => {
+  isPending = pending;
+  const elements = backdrop.querySelectorAll<HTMLInputElement | HTMLButtonElement>('input, button');
+  const closeBtn = backdrop.querySelector<HTMLButtonElement>('.auth-dialog__close');
+
+  for (const el of elements) {
+    el.disabled = pending;
+  }
+  if (closeBtn) {
+    closeBtn.style.pointerEvents = pending ? 'none' : 'auto';
+    closeBtn.style.opacity = pending ? '0.4' : '1';
+  }
+};
+
+const getErrorMessage = (error: unknown, fallback: string): string =>
+  error instanceof Error && error.message ? error.message : fallback;
 
 const validateEmail = (email: string): string => {
   if (!email.trim()) return 'Email is required.';
@@ -201,6 +222,13 @@ export const createAuthDialog = (): HTMLElement => {
     registerSubmitBtn.disabled = Boolean(userErr || emailErr || passErr || confirmErr);
   };
 
+  // Zdejmuje blokadę dialogu i przywraca poprawny stan przycisków submit
+  const finishPending = (): void => {
+    setDialogPendingState(backdrop, false);
+    checkLoginValidity();
+    checkRegisterValidity();
+  };
+
   const setupValidationListeners = (): void => {
     if (loginEmailInput && loginPasswordInput) {
       const handleLoginInput = (e: Event): void => {
@@ -233,7 +261,6 @@ export const createAuthDialog = (): HTMLElement => {
         } else if (target === registerPasswordInput) {
           err = validateRegisterPassword(target.value);
           fieldName = 'password';
-          // Revalidate confirm password whenever the password changes
           const confirmErrSpan = backdrop.querySelector('#error-register-confirm-password');
           if (confirmErrSpan && registerConfirmInput.value) {
             confirmErrSpan.textContent = validateConfirmPassword(registerConfirmInput.value, target.value);
@@ -259,6 +286,48 @@ export const createAuthDialog = (): HTMLElement => {
 
   setupValidationListeners();
 
+  // Logowanie: Firebase + sesja aplikacji
+  loginForm?.addEventListener('submit', async () => {
+    if (isPending || !loginEmailInput || !loginPasswordInput) return;
+    setDialogPendingState(backdrop, true);
+
+    try {
+      await loginAndCreateSession(loginEmailInput.value, loginPasswordInput.value);
+      finishPending();
+      closeAuthDialog();
+      window.dispatchEvent(new CustomEvent('auth-state-changed'));
+    } catch (error) {
+      finishPending();
+      const errSpan = backdrop.querySelector('#error-login-password');
+      if (errSpan) {
+        errSpan.textContent = getErrorMessage(error, 'Login failed. Please check credentials.');
+      }
+    }
+  });
+
+  // Rejestracja: Firebase + sesja aplikacji
+  registerForm?.addEventListener('submit', async () => {
+    if (isPending || !registerUsernameInput || !registerEmailInput || !registerPasswordInput) return;
+    setDialogPendingState(backdrop, true);
+
+    try {
+      await registerAndCreateSession(
+        registerEmailInput.value,
+        registerPasswordInput.value,
+        registerUsernameInput.value
+      );
+      finishPending();
+      closeAuthDialog();
+      window.dispatchEvent(new CustomEvent('auth-state-changed'));
+    } catch (error) {
+      finishPending();
+      const errSpan = backdrop.querySelector('#error-register-password');
+      if (errSpan) {
+        errSpan.textContent = getErrorMessage(error, 'Registration failed. Please try again.');
+      }
+    }
+  });
+
   const resetForms = (): void => {
     loginForm?.reset();
     registerForm?.reset();
@@ -271,6 +340,7 @@ export const createAuthDialog = (): HTMLElement => {
   };
 
   const switchTab = (targetTab: 'login' | 'register'): void => {
+    if (isPending) return;
     resetForms();
     const tabs = backdrop.querySelectorAll<HTMLButtonElement>('.auth-switcher__btn');
     const pill = backdrop.querySelector<HTMLElement>('.auth-switcher__pill');
@@ -313,20 +383,17 @@ export const createAuthDialog = (): HTMLElement => {
   backdrop.addEventListener('click', (event) => {
     const target = event.target as HTMLElement;
 
-    // Click on the backdrop itself closes the dialog
     if (target === backdrop) {
-      closeAuthDialog();
+      if (!isPending) closeAuthDialog();
       return;
     }
 
-    // "Register" / "Login" inline links in the footer
     if (target.classList.contains('auth-form__switch-inline')) {
       const tabTarget = target.dataset.target as 'login' | 'register' | undefined;
-      if (tabTarget) switchTab(tabTarget);
+      if (tabTarget && !isPending) switchTab(tabTarget);
       return;
     }
 
-    // Show / hide password
     const eyeBtn = target.closest<HTMLButtonElement>('.auth-form__eye-btn');
     if (eyeBtn) {
       const input = eyeBtn.parentElement?.querySelector<HTMLInputElement>('input');
@@ -335,7 +402,9 @@ export const createAuthDialog = (): HTMLElement => {
   });
 
   const closeBtn = backdrop.querySelector('.auth-dialog__close');
-  closeBtn?.addEventListener('click', closeAuthDialog);
+  closeBtn?.addEventListener('click', () => {
+    if (!isPending) closeAuthDialog();
+  });
 
   activeBackdrop = backdrop;
   return backdrop;
@@ -355,7 +424,7 @@ export const openAuthDialog = (initialTab: 'login' | 'register' = 'login'): void
 };
 
 export const closeAuthDialog = (): void => {
-  if (!activeBackdrop || activeBackdrop.classList.contains('auth-backdrop--hidden')) return;
+  if (isPending || !activeBackdrop || activeBackdrop.classList.contains('auth-backdrop--hidden')) return;
 
   activeBackdrop.classList.add('auth-backdrop--closing');
 
