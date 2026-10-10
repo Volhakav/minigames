@@ -1,26 +1,40 @@
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
-  updateProfile, 
-  signOut 
+  updateProfile 
 } from 'firebase/auth';
 import { auth } from './firebase';
+import { saveAppSession } from './session';
 
-export const registerUser = async (email: string, pass: string, username: string) => {
+export const registerAndCreateSession = async (email: string, pass: string, username: string) => {
   const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-  if (userCredential.user) {
-    await updateProfile(userCredential.user, {
-      displayName: username
-    });
+  const user = userCredential.user;
+
+  if (user) {
+    await updateProfile(user, { displayName: username });
   }
-  return userCredential.user;
+
+
+  saveAppSession({
+    displayName: username || user.email?.split('@')[0] || 'Gamer',
+    email: user.email || email,
+    avatarUrl: user.photoURL || undefined,
+  });
+
+  return user;
 };
 
-export const loginUser = async (email: string, pass: string) => {
+export const loginAndCreateSession = async (email: string, pass: string) => {
   const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-  return userCredential.user;
-};
+  const user = userCredential.user;
 
-export const logoutUser = async () => {
-  await signOut(auth);
+  const displayName = user.displayName || user.email?.split('@')[0] || 'Gamer';
+
+  saveAppSession({
+    displayName,
+    email: user.email || email,
+    avatarUrl: user.photoURL || undefined,
+  });
+
+  return user;
 };
