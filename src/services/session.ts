@@ -11,14 +11,13 @@ export interface AppSession {
 const SESSION_KEY = 'minigames:spa-app:app-session';
 const SESSION_TTL_MS = 5 * 60 * 1000; 
 
-const showExpirationSnackbar = (): void => {
+const showSnackbar = (message: string, type: 'success' | 'error' | 'warning'): void => {
   window.dispatchEvent(
     new CustomEvent('show-snackbar', {
-      detail: { message: 'Your session has expired. Please log in again.', type: 'warning' },
+      detail: { message, type },
     })
   );
 };
-
 
 export const saveAppSession = (data: {
   displayName: string;
@@ -67,13 +66,15 @@ export const getValidAppSession = (): AppSession | null => {
   }
 };
 
-export const clearAppSessionAndSignOut = (notify = false): void => {
+export const clearAppSessionAndSignOut = (notifyExpiration = false): void => {
   localStorage.removeItem(SESSION_KEY);
+
   signOut(auth).catch(() => {
+    showSnackbar('Failed to sign out from server. You are in Guest Mode locally.', 'error');
   });
 
-  if (notify) {
-    showExpirationSnackbar();
+  if (notifyExpiration) {
+    showSnackbar('Your session has expired. Please log in again.', 'warning');
   }
 
   window.dispatchEvent(new CustomEvent('auth-state-changed'));
@@ -82,7 +83,7 @@ export const clearAppSessionAndSignOut = (notify = false): void => {
 if (typeof window !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-      getValidAppSession(); 
+      getValidAppSession();
     }
   });
 }
