@@ -33,9 +33,9 @@ export const saveAppSession = (data: {
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
 };
 
-export const getValidAppSession = (): AppSession | null => {
+export const getValidAppSession = (): AppSession | undefined => {
   const raw = localStorage.getItem(SESSION_KEY);
-  if (!raw) return null;
+  if (!raw) return undefined;
 
   try {
     const parsed = JSON.parse(raw);
@@ -56,13 +56,13 @@ export const getValidAppSession = (): AppSession | null => {
 
     if (age < 0 || age >= SESSION_TTL_MS) {
       clearAppSessionAndSignOut(true);
-      return null;
+      return undefined;
     }
 
     return parsed;
   } catch {
     clearAppSessionAndSignOut(true);
-    return null;
+    return undefined;
   }
 };
 

@@ -14,7 +14,7 @@ const ICONS = {
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+/;
-const USERNAME_CHARS_PATTERN = /^[A-Za-z0-9]+/;
+const USERNAME_CHARS_PATTERN = /^[\dA-Za-z]+/;
 
 const matchesFully = (pattern: RegExp, value: string): boolean => {
   const match = value.match(pattern);
@@ -61,24 +61,32 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
   if (error instanceof FirebaseError) {
     switch (error.code) {
       case 'auth/popup-closed-by-user':
-      case 'auth/cancelled-popup-request':
+      case 'auth/cancelled-popup-request': {
         return 'Google sign-in was canceled.';
-      case 'auth/popup-blocked':
+      }
+      case 'auth/popup-blocked': {
         return 'The popup was blocked by your browser. Please allow popups and try again.';
-      case 'auth/operation-not-allowed':
+      }
+      case 'auth/operation-not-allowed': {
         return 'This sign-in method is not enabled for the project.';
-      case 'auth/unauthorized-domain':
+      }
+      case 'auth/unauthorized-domain': {
         return 'This domain is not authorized for sign-in.';
-      case 'auth/email-already-in-use':
+      }
+      case 'auth/email-already-in-use': {
         return 'This email is already registered.';
+      }
       case 'auth/invalid-credential':
       case 'auth/wrong-password':
-      case 'auth/user-not-found':
+      case 'auth/user-not-found': {
         return 'Invalid email or password.';
-      case 'auth/network-request-failed':
+      }
+      case 'auth/network-request-failed': {
         return 'Network error. Please check your connection.';
-      default:
+      }
+      default: {
         return fallback;
+      }
     }
   }
   return error instanceof Error && error.message ? error.message : fallback;
@@ -105,7 +113,7 @@ const validateRegisterPassword = (password: string): string => {
   if (password.length < 6) return 'Password must be at least 6 characters long.';
   if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter.';
   if (!/\d/.test(password)) return 'Password must contain at least one digit.';
-  if (!/[^A-Za-z0-9]/.test(password)) return 'Password must contain at least one special character.';
+  if (!/[^\dA-Za-z]/.test(password)) return 'Password must contain at least one special character.';
   return '';
 };
 
@@ -302,22 +310,33 @@ export const createAuthDialog = (): HTMLElement => {
         let err = '';
         let fieldName = '';
 
-        if (target === registerUsernameInput) {
+        switch (target) {
+        case registerUsernameInput: {
           err = validateUsername(target.value);
           fieldName = 'username';
-        } else if (target === registerEmailInput) {
+        
+        break;
+        }
+        case registerEmailInput: {
           err = validateEmail(target.value);
           fieldName = 'email';
-        } else if (target === registerPasswordInput) {
+        
+        break;
+        }
+        case registerPasswordInput: {
           err = validateRegisterPassword(target.value);
           fieldName = 'password';
           const confirmErrSpan = backdrop.querySelector('#error-register-confirm-password');
           if (confirmErrSpan && registerConfirmInput.value) {
             confirmErrSpan.textContent = validateConfirmPassword(registerConfirmInput.value, target.value);
           }
-        } else {
+        
+        break;
+        }
+        default: {
           err = validateConfirmPassword(target.value, registerPasswordInput.value);
           fieldName = 'confirm-password';
+        }
         }
 
         const errSpan = backdrop.querySelector(`#error-register-${fieldName}`);
@@ -485,13 +504,18 @@ export const createAuthDialog = (): HTMLElement => {
 };
 
 export const openAuthDialog = (initialTab: 'login' | 'register' = 'login'): void => {
-  if (!activeBackdrop) return;
-
   if (getValidAppSession()) {
     cleanAuthQueryParam();
     showSnackbar('You are already authenticated.', 'warning');
     return;
   }
+
+  if (!activeBackdrop || !document.body.contains(activeBackdrop)) {
+    const dialogEl = createAuthDialog();
+    document.body.append(dialogEl);
+  }
+
+  if (!activeBackdrop) return;
 
   activeBackdrop.classList.remove('auth-backdrop--hidden');
   document.body.classList.add('no-scroll');
