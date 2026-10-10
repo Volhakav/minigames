@@ -11,9 +11,9 @@ import { appRouter } from '../index';
 import { getValidAppSession } from '../services/session';
 import { openAuthDialog } from './auth-dialog';
 
+const API_BASE_URL = 'https://faxb76kxra.execute-api.eu-central-1.amazonaws.com/api';
 const PLACEHOLDER_IMAGE = 'https://placehold.co/600x350/1e1e1e/ffffff?text=No+Image';
 
-// Możliwe nazwy pól z obrazkiem (lista gier używa cardImage)
 const IMAGE_KEYS = [
   'heroImage',
   'cardImage',
@@ -26,7 +26,6 @@ const IMAGE_KEYS = [
   'images',
 ];
 
-// Możliwe nazwy pól z opisem w odpowiedzi szczegółowej
 const DESCRIPTION_KEYS = [
   'description',
   'longDescription',
@@ -112,9 +111,6 @@ const getAvatarColor = (name: string): string => {
   return '#e0f2fe';
 };
 
-// Zamienia wartość z API na adres obrazka (string, tablica albo obiekt z url/src/path).
-// Ścieżki względne (np. /assets/images/games/x.jpg) zwracamy bez zmian:
-// pliki leżą w aplikacji (frontend), a nie na serwerze API.
 const extractImageUrl = (value: unknown): string => {
   if (typeof value === 'string') {
     const trimmed = value.trim();
@@ -165,6 +161,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
 
   let isClosing = false;
   let isFavPending = false;
+  let isCommentPending = false;
 
   const handleAuthStateChanged = (): void => {
     if (document.body.contains(backdrop) && !isClosing) {
@@ -319,6 +316,9 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
     const gameRecord = gameData as unknown as { isLikedByCurrentUser?: boolean; isLiked?: boolean };
     let isFavorited = Boolean(gameRecord.isLikedByCurrentUser ?? gameRecord.isLiked);
 
+    const session = getValidAppSession();
+    const userInitial = session && session.displayName ? session.displayName.charAt(0).toUpperCase() : 'U';
+
     dialog.innerHTML = `
       <header class="game-dialog__hero">
         <img
@@ -410,14 +410,15 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
           <h3 class="game-dialog__section-title game-dialog__comments-title">Comments (...)</h3>
 
           <form class="game-dialog__comment-form">
-            <div class="game-dialog__avatar game-dialog__avatar--user">U</div>
+            <div class="game-dialog__avatar game-dialog__avatar--user">${userInitial}</div>
             <textarea
               class="game-dialog__textarea"
-              placeholder="Write a comment..."
+              placeholder="${session ? 'Write a comment...' : 'Please log in to comment'}"
               rows="1"
               aria-label="Write a comment"
+              ${!session ? 'disabled' : ''}
             ></textarea>
-            <button type="submit" class="game-dialog__send-btn" aria-label="Send comment">
+            <button type="submit" class="game-dialog__send-btn" aria-label="Send comment" ${!session ? 'disabled' : ''}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -446,8 +447,9 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
     const closeBtn = dialog.querySelector('.game-dialog__close');
     const playBtn = dialog.querySelector('.game-dialog__play-btn');
     const favBtn = dialog.querySelector<HTMLButtonElement>('.game-dialog__fav-btn');
-    const commentForm = dialog.querySelector('.game-dialog__comment-form');
+    const commentForm = dialog.querySelector<HTMLFormElement>('.game-dialog__comment-form');
     const textarea = dialog.querySelector<HTMLTextAreaElement>('.game-dialog__textarea');
+    const sendBtn = dialog.querySelector<HTMLButtonElement>('.game-dialog__send-btn');
     const commentsContainer = dialog.querySelector<HTMLElement>('.game-dialog__comments-section');
 
     closeBtn?.addEventListener('click', () => close());
@@ -488,8 +490,8 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
     favBtn?.addEventListener('click', async () => {
       if (isFavPending) return;
 
-      const session = getValidAppSession();
-      if (!session) {
+      const activeSession = getValidAppSession();
+      if (!activeSession) {
         showSnackbar('Please log in to manage your favorites.', 'warning');
         openAuthDialog('login');
         return;
@@ -499,7 +501,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
       updateFavButtonUI(isFavorited, true);
 
       try {
-        const result = await toggleGameFavorite(gameSlug, session.email);
+        const result = await toggleGameFavorite(gameSlug, activeSession.email);
         isFavorited = Boolean(result.isFavorited);
         gameData.isLikedByCurrentUser = isFavorited;
         gameData.likesCount = result.likesCount;
@@ -525,9 +527,83 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
       });
     }
 
+    // === OBSŁUGA WYSYŁANIA KOMENTARZA (ZADANIE RSS-QS-4-2-2) ===
+    const handleCommentSubmit = async (): Promise<void> => {
+      if (isCommentPending || !textarea) return;
+
+      const activeSession = getValidAppSession();
+      if (!activeSession) {
+        showSnackbar('Please log in to post a comment.', 'warning');
+        openAuthDialog('login');
+        return;
+      }
+
+      const textValue = textarea.value.trim();
+      if (!textValue) {
+        showSnackbar('Comment cannot be empty.', 'warning');
+        return;
+      }
+
+      if (textValue.length > 500) {
+        showSnackbar('Comment exceeds 500 characters limit.', 'warning');
+        return;
+      }
+
+      isCommentPending = true;
+      textarea.disabled = true;
+      if (sendBtn) sendBtn.disabled = true;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/games/${gameSlug}/comments`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userEmail: activeSession.email,
+            authorName: activeSession.displayName,
+            text: textValue,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to post comment.');
+        }
+
+        // Sukces (201): czyszczymy textarea i resetujemy wysokość
+        textarea.value = '';
+        textarea.style.height = 'auto';
+
+        showSnackbar('Comment posted successfully!', 'success');
+
+        // Odświeżenie listy komentarzy i metadanych z GET
+        if (commentsContainer) {
+          await loadComments(commentsContainer);
+        }
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : 'Network error posting comment.';
+        showSnackbar(msg, 'error');
+        // Tekst w textarea zostaje zachowany, aby użytkownik mógł ponowić próbę
+      } finally {
+        isCommentPending = false;
+        textarea.disabled = false;
+        if (sendBtn) sendBtn.disabled = false;
+        textarea.focus();
+      }
+    };
+
     commentForm?.addEventListener('submit', (e) => {
       e.preventDefault();
+      handleCommentSubmit();
     });
+
+    textarea?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleCommentSubmit();
+      }
+    });
+    // ==========================================================
 
     if (commentsContainer) {
       loadComments(commentsContainer);
@@ -536,9 +612,24 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
 
   const loadComments = async (commentsContainer: HTMLElement): Promise<void> => {
     try {
-      const response = await fetchGameComments(gameSlug, 3, 'newest');
-      const comments = response.data || [];
-      const totalCount = response.totalCount ?? comments.length;
+      const session = getValidAppSession();
+      const queryParam = session ? `?userEmail=${encodeURIComponent(session.email)}&limit=3&sort=newest` : '?limit=3&sort=newest';
+      
+      const response = await fetch(`${API_BASE_URL}/games/${gameSlug}/comments${queryParam}`);
+      if (!response.ok) {
+        throw new Error('Failed to load comments');
+      }
+
+      const jsonRes = await response.json();
+      const resRecord = jsonRes as unknown as {
+        data?: RawCommentItem[];
+        totalCount?: number;
+        meta?: { totalComments?: number };
+      };
+
+      const comments = resRecord.data || [];
+      const totalCount = resRecord.meta?.totalComments ?? resRecord.totalCount ?? comments.length;
+      
       renderCommentsSection(comments, totalCount, commentsContainer);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to load comments';
