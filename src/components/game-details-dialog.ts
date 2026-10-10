@@ -14,6 +14,15 @@ import { openAuthDialog } from './auth-dialog';
 const API_BASE_URL = 'https://faxb76kxra.execute-api.eu-central-1.amazonaws.com/api';
 const PLACEHOLDER_IMAGE = 'https://placehold.co/600x350/1e1e1e/ffffff?text=No+Image';
 
+const AVATAR_DESIGN_TOKENS = [
+  'var(--avatar-1, #bae6fd)',
+  'var(--avatar-2, #fef08a)',
+  'var(--avatar-3, #e2e8f0)',
+  'var(--avatar-4, #e0f2fe)',
+  'var(--avatar-5, #fed7aa)',
+  'var(--avatar-6, #f7fee7)',
+];
+
 const IMAGE_KEYS = [
   'heroImage',
   'cardImage',
@@ -104,13 +113,6 @@ export const formatRelativeTime = (dateString?: string): string => {
   return `${diffInYears} ${diffInYears === 1 ? 'year ago' : 'years ago'}`;
 };
 
-const getAvatarColor = (name: string): string => {
-  if (name.startsWith('F') || name.toLowerCase().includes('forest')) return '#bae6fd';
-  if (name.startsWith('H') || name.toLowerCase().includes('herbal')) return '#fef08a';
-  if (name.startsWith('C') || name.toLowerCase().includes('cottage')) return '#e2e8f0';
-  return '#e0f2fe';
-};
-
 const extractImageUrl = (value: unknown): string => {
   if (typeof value === 'string') {
     const trimmed = value.trim();
@@ -167,6 +169,26 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
     if (document.body.contains(backdrop) && !isClosing) {
       loadData();
     }
+  };
+
+  const avatarColorMap = new Map<string, string>();
+
+  const getStableAvatarColor = (name: string): string => {
+    const trimmedName = name.trim();
+    if (avatarColorMap.has(trimmedName)) {
+      return avatarColorMap.get(trimmedName)!;
+    }
+
+    let hash = 0;
+    for (let i = 0; i < trimmedName.length; i++) {
+      hash = trimmedName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    const index = (hash >>> 0) % AVATAR_DESIGN_TOKENS.length;
+    const assignedColor = AVATAR_DESIGN_TOKENS[index];
+
+    avatarColorMap.set(trimmedName, assignedColor);
+    return assignedColor;
   };
 
   const close = (updateUrl = true): void => {
@@ -256,12 +278,14 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
     listEl.innerHTML = comments
       .map((comment) => {
         const authorName = comment.author || comment.authorName || comment.userName || 'Anonymous';
+        const trimmedAuthor = authorName.trim();
+        const initial = escapeHtml(trimmedAuthor ? trimmedAuthor.charAt(0).toUpperCase() : 'A');
+        
         const text = comment.text || comment.content || comment.comment || '';
         const likes = comment.likesCount ?? comment.likes ?? 0;
         const rawDate = comment.createdAt || comment.timestamp || comment.date;
         const displayTime = formatRelativeTime(rawDate);
-        const bg = comment.avatarBg || getAvatarColor(authorName);
-        const initial = escapeHtml(authorName.charAt(0).toUpperCase());
+        const bg = comment.avatarBg || getStableAvatarColor(authorName);
 
         const isLiked = Boolean(comment.isLikedByCurrentUser ?? comment.isLiked ?? comment.liked);
         const strokeColor = isLiked ? '#ff4b4b' : '#18152e';
@@ -317,7 +341,8 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
     let isFavorited = Boolean(gameRecord.isLikedByCurrentUser ?? gameRecord.isLiked);
 
     const session = getValidAppSession();
-    const userInitial = session && session.displayName ? session.displayName.charAt(0).toUpperCase() : 'U';
+    const userTrimmed = session && session.displayName ? session.displayName.trim() : '';
+    const userInitial = userTrimmed ? escapeHtml(userTrimmed.charAt(0).toUpperCase()) : 'U';
 
     dialog.innerHTML = `
       <header class="game-dialog__hero">
@@ -527,7 +552,6 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
       });
     }
 
-    // === OBSŁUGA WYSYŁANIA KOMENTARZA (ZADANIE RSS-QS-4-2-2) ===
     const handleCommentSubmit = async (): Promise<void> => {
       if (isCommentPending || !textarea) return;
 
@@ -570,20 +594,17 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
           throw new Error('Failed to post comment.');
         }
 
-        // Sukces (201): czyszczymy textarea i resetujemy wysokość
         textarea.value = '';
         textarea.style.height = 'auto';
 
         showSnackbar('Comment posted successfully!', 'success');
 
-        // Odświeżenie listy komentarzy i metadanych z GET
         if (commentsContainer) {
           await loadComments(commentsContainer);
         }
       } catch (error) {
         const msg = error instanceof Error ? error.message : 'Network error posting comment.';
         showSnackbar(msg, 'error');
-        // Tekst w textarea zostaje zachowany, aby użytkownik mógł ponowić próbę
       } finally {
         isCommentPending = false;
         textarea.disabled = false;
@@ -603,7 +624,6 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
         handleCommentSubmit();
       }
     });
-    // ==========================================================
 
     if (commentsContainer) {
       loadComments(commentsContainer);
