@@ -65,7 +65,30 @@ body.no-scroll {
     }
   }
 
-  // Новый контейнер правых элементов
+  &__auth-group {
+    display: flex;
+    align-items: center;
+    gap: $size-2;
+  }
+
+  &__mobile-auth-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  &__btn--logout {
+    padding: 10px 20px;
+    background: transparent;
+    border: 2px solid $color-on-primary;
+    color: $color-on-primary;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+
   &__right-controls {
     display: flex;
     align-items: center;
@@ -76,6 +99,58 @@ body.no-scroll {
     display: flex;
     align-items: center;
     gap: $size-2;
+  }
+
+  &__profile {
+    display: flex;
+    align-items: center;
+    gap: $size-2;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: $corner-small;
+    background-color: rgba(255, 255, 255, 0.05);
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  &__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: $color-primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 2px solid $color-on-primary;
+
+    &-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    &-initials {
+      font-family: $font-family-base;
+      font-size: 14px;
+      font-weight: $font-weight-bold;
+      color: $color-on-primary;
+    }
+  }
+
+  &__profile-name {
+    font-family: $font-family-base;
+    font-size: $font-body-medium;
+    font-weight: $font-weight-medium;
+    color: $color-on-primary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
   }
 
   &__btn {
@@ -132,7 +207,6 @@ body.no-scroll {
     }
   }
 
-  // Mobile Fullscreen Overlay
   &__mobile-overlay {
     display: flex;
     position: fixed;
@@ -208,6 +282,9 @@ body.no-scroll {
     flex-direction: column;
     gap: 12px;
     width: 100%;
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 
     .header__btn {
       width: 100%;
@@ -226,9 +303,25 @@ body.no-scroll {
       }
     }
   }
+
+  &__mobile-profile {
+    display: flex;
+    align-items: center;
+    gap: $size-3;
+    cursor: pointer;
+    padding: 14px 16px;
+    border-radius: $corner-small;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    width: 100%;
+
+    .header__profile-name {
+      color: #ffffff;
+      font-size: 18px;
+    }
+  }
 }
 
-// Tablet (до 1024px)
 @media (max-width: 1024px) {
   .header {
     &__container {
@@ -256,7 +349,6 @@ body.no-scroll {
   }
 }
 
-// Mobile (до 640px)
 @media (max-width: 640px) {
   .header {
     &__container {
