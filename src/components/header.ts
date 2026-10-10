@@ -1,10 +1,40 @@
 import logoIcon from '../assets/icons/logo-icon.webp';
 import { openAuthDialog } from './auth-dialog';
+import { getValidAppSession, clearAppSessionAndSignOut } from '../services/session';
 
 export interface HeaderOptions {
   activePage?: 'home' | 'library';
   onNavigate?: (page: 'home' | 'library') => void;
 }
+
+const getInitials = (name: string): string => {
+  const trimmed = name.trim();
+  if (!trimmed) return 'U';
+
+  const words = trimmed.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return 'U';
+
+  if (words.length === 1) {
+    const match = words[0].match(/[\p{L}\p{N}]/u);
+    return match ? match[0].toUpperCase() : 'U';
+  }
+
+  const firstMatch = words[0].match(/[\p{L}\p{N}]/u);
+  const secondMatch = words[1].match(/[\p{L}\p{N}]/u);
+
+  const initials = (firstMatch?.[0] || '') + (secondMatch?.[0] || '');
+  return initials ? initials.toUpperCase() : 'U';
+};
+
+const getDisplayName = (session: { displayName?: string; email?: string }): string => {
+  if (session.displayName && session.displayName.trim()) {
+    return session.displayName.trim();
+  }
+  if (session.email && session.email.includes('@')) {
+    return session.email.split('@')[0];
+  }
+  return 'Gamer';
+};
 
 export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
   const { activePage = 'home', onNavigate } = options;
@@ -15,7 +45,6 @@ export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
   const container = document.createElement('div');
   container.className = 'header__container';
 
-  // --- SPA Navigation Helper ---
   const handleNavigation = (event: Event, targetPage: 'home' | 'library'): void => {
     event.preventDefault();
     if (onNavigate) {
@@ -23,7 +52,6 @@ export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
     }
   };
 
-  // --- Logo ---
   const logo = document.createElement('a');
   logo.href = '/';
   logo.className = 'header__logo';
@@ -40,7 +68,6 @@ export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
 
   logo.append(logoImg, logoText);
 
-  // --- Desktop Nav ---
   const nav = document.createElement('nav');
   nav.className = 'header__nav';
 
@@ -50,8 +77,8 @@ export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
   const navItems: Array<{ name: string; page: 'home' | 'library' }> = [
     { name: 'Home', page: 'home' },
     { name: 'Library', page: 'library' },
-    { name: 'Tournaments', page: 'home' }, // Non-existent pages map to Home
-    { name: 'Community', page: 'home' }, // Non-existent pages map to Home
+    { name: 'Tournaments', page: 'home' },
+    { name: 'Community', page: 'home' },
   ];
 
   for (const item of navItems) {
@@ -61,7 +88,6 @@ export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
     const a = document.createElement('a');
     a.href = '#';
 
-    // Check if this item corresponds to the current active page
     const isActive = item.name.toLowerCase() === activePage;
     a.className = `header__nav-link${isActive ? ' header__nav-link--active' : ''}`;
     a.textContent = item.name;
@@ -74,23 +100,109 @@ export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
 
   nav.append(navList);
 
-  // --- Desktop Actions ---
-  const actions = document.createElement('div');
-  actions.className = 'header__actions';
+  // --- Render Actions ---
+  const renderActionsContainer = (): { actions: HTMLElement; mobileActions: HTMLElement } => {
+    const actions = document.createElement('div');
+    actions.className = 'header__actions';
 
-  const logInBtn = document.createElement('button');
-  logInBtn.type = 'button';
-  logInBtn.className = 'header__btn header__btn--login';
-  logInBtn.textContent = 'Log In';
+    const mobileActions = document.createElement('div');
+    mobileActions.className = 'header__mobile-actions';
 
-  const signUpBtn = document.createElement('button');
-  signUpBtn.type = 'button';
-  signUpBtn.className = 'header__btn header__btn--signup';
-  signUpBtn.textContent = 'Sign Up';
+    const session = getValidAppSession();
 
-  actions.append(logInBtn, signUpBtn);
+    if (session) {
+      const displayName = getDisplayName(session);
+      const initials = getInitials(displayName);
 
-  // --- Burger Button ---
+      const createAuthenticatedGroup = (isMobile = false): HTMLElement => {
+        const group = document.createElement('div');
+        group.className = isMobile ? 'header__mobile-auth-group' : 'header__auth-group';
+
+        const profileDiv = document.createElement('div');
+        profileDiv.className = isMobile ? 'header__mobile-profile' : 'header__profile';
+
+        // 1. Najpierw nazwa użytkownika (zgodnie z mockupem: "John Doe")
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'header__profile-name';
+        nameSpan.textContent = displayName;
+
+        // 2. Potem awatar / inicjały w kółku (zgodnie z mockupem: "JD")
+        const avatarWrapper = document.createElement('div');
+        avatarWrapper.className = 'header__avatar';
+
+        if (session.avatarUrl) {
+          const img = document.createElement('img');
+          img.src = session.avatarUrl;
+          img.alt = displayName;
+          img.className = 'header__avatar-img';
+          img.onerror = (): void => {
+            img.style.display = 'none';
+            initialsSpan.style.display = 'flex';
+          };
+          avatarWrapper.append(img);
+        }
+
+        const initialsSpan = document.createElement('span');
+        initialsSpan.className = 'header__avatar-initials';
+        initialsSpan.textContent = initials;
+        if (session.avatarUrl) {
+          initialsSpan.style.display = 'none';
+        }
+        avatarWrapper.append(initialsSpan);
+
+        profileDiv.append(nameSpan, avatarWrapper);
+
+        // 3. Przycisk Logout jako osobny element w grupie
+        const logoutBtn = document.createElement('button');
+        logoutBtn.type = 'button';
+        logoutBtn.className = 'header__btn header__btn--logout';
+        logoutBtn.textContent = 'Log Out';
+
+        logoutBtn.addEventListener('click', () => {
+          clearAppSessionAndSignOut();
+          window.dispatchEvent(new CustomEvent('auth-state-changed'));
+        });
+
+        group.append(profileDiv, logoutBtn);
+        return group;
+      };
+
+      actions.append(createAuthenticatedGroup(false));
+      mobileActions.append(createAuthenticatedGroup(true));
+    } else {
+      const logInBtn = document.createElement('button');
+      logInBtn.type = 'button';
+      logInBtn.className = 'header__btn header__btn--login';
+      logInBtn.textContent = 'Log In';
+
+      const signUpBtn = document.createElement('button');
+      signUpBtn.type = 'button';
+      signUpBtn.className = 'header__btn header__btn--signup';
+      signUpBtn.textContent = 'Sign Up';
+
+      const handleAuthClick = (): void => {
+        closeMenu();
+        openAuthDialog();
+      };
+
+      logInBtn.addEventListener('click', handleAuthClick);
+      signUpBtn.addEventListener('click', handleAuthClick);
+
+      actions.append(logInBtn, signUpBtn);
+
+      const mobileLogInBtn = logInBtn.cloneNode(true) as HTMLButtonElement;
+      const mobileSignUpBtn = signUpBtn.cloneNode(true) as HTMLButtonElement;
+      mobileLogInBtn.addEventListener('click', handleAuthClick);
+      mobileSignUpBtn.addEventListener('click', handleAuthClick);
+
+      mobileActions.append(mobileLogInBtn, mobileSignUpBtn);
+    }
+
+    return { actions, mobileActions };
+  };
+
+  let { actions, mobileActions } = renderActionsContainer();
+
   const burgerBtn = document.createElement('button');
   burgerBtn.type = 'button';
   burgerBtn.className = 'header__burger';
@@ -102,12 +214,10 @@ export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
     burgerBtn.append(line);
   }
 
-  // --- Right Controls ---
   const rightControls = document.createElement('div');
   rightControls.className = 'header__right-controls';
   rightControls.append(actions, burgerBtn);
 
-  // --- Mobile Overlay ---
   const mobileOverlay = document.createElement('div');
   mobileOverlay.className = 'header__mobile-overlay';
 
@@ -132,7 +242,6 @@ export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
 
   overlayTop.append(mobileLogo, closeBtn);
 
-  // Build Mobile Nav List dynamically to attach click listeners properly
   const mobileNavList = document.createElement('ul');
   mobileNavList.className = 'header__nav-list';
 
@@ -155,16 +264,8 @@ export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
     mobileNavList.append(li);
   }
 
-  const mobileActions = document.createElement('div');
-  mobileActions.className = 'header__mobile-actions';
-
-  const mobileLogInBtn = logInBtn.cloneNode(true) as HTMLButtonElement;
-  const mobileSignUpBtn = signUpBtn.cloneNode(true) as HTMLButtonElement;
-
-  mobileActions.append(mobileLogInBtn, mobileSignUpBtn);
   mobileOverlay.append(overlayTop, mobileNavList, mobileActions);
 
-  // --- Handlers ---
   const closeMenu = (): void => {
     mobileOverlay.classList.remove('header__mobile-overlay--active');
     document.body.classList.remove('no-scroll');
@@ -184,16 +285,21 @@ export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
   burgerBtn.addEventListener('click', openMenu);
   closeBtn.addEventListener('click', closeMenu);
 
-  const handleAuthClick = (): void => {
-    closeMenu();
-    openAuthDialog();
-  };
+  window.addEventListener('auth-state-changed', () => {
+    const newRender = renderActionsContainer();
+    actions.replaceWith(newRender.actions);
+    actions = newRender.actions;
 
-  logInBtn.addEventListener('click', handleAuthClick);
-  mobileLogInBtn.addEventListener('click', handleAuthClick);
-
-  signUpBtn.addEventListener('click', handleAuthClick);
-  mobileSignUpBtn.addEventListener('click', handleAuthClick);
+    mobileActions.replaceWith(newRender.mobileActions);
+    mobileActions = newRender.mobileActions;
+    
+    const existingMobileActions = mobileOverlay.querySelector('.header__mobile-actions');
+    if (existingMobileActions) {
+      existingMobileActions.replaceWith(mobileActions);
+    } else {
+      mobileOverlay.append(mobileActions);
+    }
+  });
 
   container.append(logo, nav, rightControls);
   header.append(container, mobileOverlay);
