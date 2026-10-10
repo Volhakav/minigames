@@ -1,62 +1,88 @@
 import { signOut } from 'firebase/auth';
 import { auth } from './firebase';
 
-export const SESSION_STORAGE_KEY = 'minigames:spa-app:app-session';
-
-const SESSION_LIFETIME_MS = 5 * 60 * 1000;
-
 export interface AppSession {
   displayName: string;
   email: string;
-  authenticatedAt: number;
   avatarUrl?: string;
+  authenticatedAt: number;
 }
 
-export const saveAppSession = (sessionData: Omit<AppSession, 'authenticatedAt'>): AppSession => {
-  const session: AppSession = {
-    ...sessionData,
-    authenticatedAt: Date.now(),
-  };
-  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-  return session;
+const SESSION_KEY = 'minigames:spa-app:app-session';
+const SESSION_TTL_MS = 5 * 60 * 1000; 
+
+const showExpirationSnackbar = (): void => {
+  window.dispatchEvent(
+    new CustomEvent('show-snackbar', {
+      detail: { message: 'Your session has expired. Please log in again.', type: 'warning' },
+    })
+  );
 };
 
 
+export const saveAppSession = (data: {
+  displayName: string;
+  email: string;
+  avatarUrl?: string;
+}): void => {
+  const session: AppSession = {
+    displayName: data.displayName,
+    email: data.email,
+    avatarUrl: data.avatarUrl,
+    authenticatedAt: Date.now(),
+  };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+};
+
 export const getValidAppSession = (): AppSession | null => {
-  const rawData = localStorage.getItem(SESSION_STORAGE_KEY);
-  if (!rawData) return null;
+  const raw = localStorage.getItem(SESSION_KEY);
+  if (!raw) return null;
 
   try {
-    const session = JSON.parse(rawData);
+    const parsed = JSON.parse(raw);
 
     if (
-      !session ||
-      typeof session !== 'object' ||
-      typeof session.displayName !== 'string' ||
-      typeof session.email !== 'string' ||
-      typeof session.authenticatedAt !== 'number'
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      typeof parsed.displayName !== 'string' ||
+      typeof parsed.email !== 'string' ||
+      typeof parsed.authenticatedAt !== 'number' ||
+      (parsed.avatarUrl !== undefined && typeof parsed.avatarUrl !== 'string')
     ) {
-      clearAppSessionAndSignOut();
-      return null;
+      throw new Error('Invalid session data structure');
     }
 
     const now = Date.now();
-    const elapsed = now - session.authenticatedAt;
+    const age = now - parsed.authenticatedAt;
 
-    if (elapsed > SESSION_LIFETIME_MS || elapsed < 0) {
-      clearAppSessionAndSignOut();
+    if (age < 0 || age >= SESSION_TTL_MS) {
+      clearAppSessionAndSignOut(true);
       return null;
     }
 
-    return session as AppSession;
+    return parsed;
   } catch {
-    clearAppSessionAndSignOut();
+    clearAppSessionAndSignOut(true);
     return null;
   }
 };
 
-export const clearAppSessionAndSignOut = (): void => {
-  localStorage.removeItem(SESSION_STORAGE_KEY);
+export const clearAppSessionAndSignOut = (notify = false): void => {
+  localStorage.removeItem(SESSION_KEY);
   signOut(auth).catch(() => {
   });
+
+  if (notify) {
+    showExpirationSnackbar();
+  }
+
+  window.dispatchEvent(new CustomEvent('auth-state-changed'));
 };
+
+if (typeof window !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      getValidAppSession(); 
+    }
+  });
+}
