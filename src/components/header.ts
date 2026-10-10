@@ -135,10 +135,10 @@ export const createHeader = (options: HeaderOptions = {}): HTMLElement => {
           img.src = session.avatarUrl;
           img.alt = displayName;
           img.className = 'header__avatar-img';
-          img.onerror = (): void => {
+          img.addEventListener('error', (): void => {
             img.style.display = 'none';
             initialsSpan.style.display = 'flex';
-          };
+          });
           avatarWrapper.append(img);
         }
 

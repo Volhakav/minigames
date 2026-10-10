@@ -1,12 +1,49 @@
 import {
-  fetchGameDetails,
   fetchGameComments,
+  fetchGameDetails,
   GameDetails,
   GameRecord,
   RawCommentItem,
+  toggleGameFavorite,
 } from '../services/api';
 import { showSnackbar } from './snackbar';
 import { appRouter } from '../index';
+import { getValidAppSession } from '../services/session';
+import { openAuthDialog } from './auth-dialog';
+
+const PLACEHOLDER_IMAGE = 'https://placehold.co/600x350/1e1e1e/ffffff?text=No+Image';
+
+// Możliwe nazwy pól z obrazkiem (lista gier używa cardImage)
+const IMAGE_KEYS = [
+  'heroImage',
+  'cardImage',
+  'imageUrl',
+  'image',
+  'cover',
+  'coverImage',
+  'thumbnail',
+  'banner',
+  'images',
+];
+
+// Możliwe nazwy pól z opisem w odpowiedzi szczegółowej
+const DESCRIPTION_KEYS = [
+  'description',
+  'longDescription',
+  'fullDescription',
+  'about',
+  'overview',
+  'summary',
+  'shortDescription',
+];
+
+const escapeHtml = (value: string): string =>
+  value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 
 const formatLikes = (count: number): string => {
   if (count >= 1000) {
@@ -75,6 +112,48 @@ const getAvatarColor = (name: string): string => {
   return '#e0f2fe';
 };
 
+// Zamienia wartość z API na adres obrazka (string, tablica albo obiekt z url/src/path).
+// Ścieżki względne (np. /assets/images/games/x.jpg) zwracamy bez zmian:
+// pliki leżą w aplikacji (frontend), a nie na serwerze API.
+const extractImageUrl = (value: unknown): string => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('//')) return `https:${trimmed}`;
+    return trimmed;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = extractImageUrl(item);
+      if (found) return found;
+    }
+    return '';
+  }
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return extractImageUrl(record.url ?? record.src ?? record.path);
+  }
+  return '';
+};
+
+const resolveGameImage = (game: GameDetails): string => {
+  const record = game as unknown as Record<string, unknown>;
+  for (const key of IMAGE_KEYS) {
+    const found = extractImageUrl(record[key]);
+    if (found) return found;
+  }
+  return '';
+};
+
+const resolveGameDescription = (game: GameDetails): string => {
+  const record = game as unknown as Record<string, unknown>;
+  for (const key of DESCRIPTION_KEYS) {
+    const value = record[key];
+    if (typeof value === 'string' && value.trim()) return value;
+  }
+  return '';
+};
+
 export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
   const backdrop = document.createElement('div');
   backdrop.className = 'game-dialog-backdrop';
@@ -85,6 +164,13 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
   backdrop.append(dialog);
 
   let isClosing = false;
+  let isFavPending = false;
+
+  const handleAuthStateChanged = (): void => {
+    if (document.body.contains(backdrop) && !isClosing) {
+      loadData();
+    }
+  };
 
   const close = (updateUrl = true): void => {
     if (isClosing) return;
@@ -93,6 +179,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
     backdrop.classList.add('game-dialog-backdrop--closing');
     document.body.classList.remove('no-scroll');
     document.removeEventListener('keydown', handleKeyDown);
+    window.removeEventListener('auth-state-changed', handleAuthStateChanged);
 
     if (updateUrl) {
       appRouter.updateQueryParams({ game: undefined });
@@ -110,6 +197,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
   };
 
   document.addEventListener('keydown', handleKeyDown);
+  window.addEventListener('auth-state-changed', handleAuthStateChanged);
 
   backdrop.addEventListener('click', (e) => {
     if (e.target === backdrop) close();
@@ -131,7 +219,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
   const renderError = (message: string): void => {
     dialog.innerHTML = `
       <div class="game-dialog__error-banner">
-        <p class="game-dialog__error-message">${message}</p>
+        <p class="game-dialog__error-message">${escapeHtml(message)}</p>
         <div class="game-dialog__error-actions">
           <button type="button" class="game-dialog__retry-btn">Retry</button>
           <button type="button" class="game-dialog__close-error-btn">Close</button>
@@ -146,7 +234,11 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
     dialog.querySelector('.game-dialog__close-error-btn')?.addEventListener('click', () => close());
   };
 
-  const renderCommentsSection = (comments: RawCommentItem[], totalCount: number, commentsContainer: HTMLElement): void => {
+  const renderCommentsSection = (
+    comments: RawCommentItem[],
+    totalCount: number,
+    commentsContainer: HTMLElement
+  ): void => {
     const titleEl = commentsContainer.querySelector('.game-dialog__comments-title');
     const listEl = commentsContainer.querySelector('.game-dialog__comments-list');
     if (!listEl) return;
@@ -172,7 +264,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
         const rawDate = comment.createdAt || comment.timestamp || comment.date;
         const displayTime = formatRelativeTime(rawDate);
         const bg = comment.avatarBg || getAvatarColor(authorName);
-        const initial = authorName.charAt(0).toUpperCase();
+        const initial = escapeHtml(authorName.charAt(0).toUpperCase());
 
         const isLiked = Boolean(comment.isLikedByCurrentUser ?? comment.isLiked ?? comment.liked);
         const strokeColor = isLiked ? '#ff4b4b' : '#18152e';
@@ -182,14 +274,14 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
             <article class="game-dialog__comment">
               <div class="game-dialog__comment-header">
                 <div class="game-dialog__comment-author">
-                  <div class="game-dialog__avatar" style="background-color: ${bg};">
+                  <div class="game-dialog__avatar" style="background-color: ${escapeHtml(bg)};">
                     ${initial}
                   </div>
-                  <span class="game-dialog__author-name">${authorName}</span>
+                  <span class="game-dialog__author-name">${escapeHtml(authorName)}</span>
                 </div>
-                <span class="game-dialog__comment-time">${displayTime}</span>
+                <span class="game-dialog__comment-time">${escapeHtml(displayTime)}</span>
               </div>
-              <p class="game-dialog__comment-text">${text}</p>
+              <p class="game-dialog__comment-text">${escapeHtml(text)}</p>
               <button type="button" class="game-dialog__like-btn${isLiked ? ' game-dialog__like-btn--active' : ''}">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="${strokeColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -206,27 +298,32 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
   const renderContent = (gameData: GameDetails): void => {
     const topRecords: GameRecord[] = gameData.topRecords || [];
 
-    const recordsHtml = topRecords.length > 0
-      ? topRecords
-          .map(
-            (rec) => `
+    const recordsHtml =
+      topRecords.length > 0
+        ? topRecords
+            .map(
+              (rec) => `
             <li class="game-dialog__record-item">
-              <span class="game-dialog__record-user">${getTrophyEmoji(rec.position)} ${rec.playerName}</span>
+              <span class="game-dialog__record-user">${getTrophyEmoji(rec.position)} ${escapeHtml(rec.playerName)}</span>
               <span class="game-dialog__record-score">${formatScore(rec.score)}</span>
               <span class="game-dialog__record-date">${formatRelativeTime(rec.achievedAt)}</span>
             </li>
           `
-          )
-          .join('')
-      : `<li class="game-dialog__record-item" style="opacity: 0.7;">No records achieved yet.</li>`;
+            )
+            .join('')
+        : `<li class="game-dialog__record-item" style="opacity: 0.7;">No records achieved yet.</li>`;
 
-    const heroImgUrl = gameData.heroImage || gameData.cardImage;
+    const heroImgUrl = resolveGameImage(gameData);
+    const description = resolveGameDescription(gameData);
+
+    const gameRecord = gameData as unknown as { isLikedByCurrentUser?: boolean; isLiked?: boolean };
+    let isFavorited = Boolean(gameRecord.isLikedByCurrentUser ?? gameRecord.isLiked);
 
     dialog.innerHTML = `
       <header class="game-dialog__hero">
-        <img 
-          src="${heroImgUrl}" 
-          alt="${gameData.name} Cover" 
+        <img
+          src="${escapeHtml(heroImgUrl || PLACEHOLDER_IMAGE)}"
+          alt="${escapeHtml(gameData.name)} Cover"
           class="game-dialog__hero-img"
         />
         <button type="button" class="game-dialog__zoom-btn" aria-label="Zoom image">
@@ -246,7 +343,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
       <div class="game-dialog__body">
         <section class="game-dialog__info">
           <div class="game-dialog__header">
-            <h2 class="game-dialog__title">${gameData.name}</h2>
+            <h2 class="game-dialog__title">${escapeHtml(gameData.name)}</h2>
             <div class="game-dialog__stats">
               <div class="game-dialog__stat">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#FFD02B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -258,41 +355,46 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#FF4B4B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
-                <span>${formatLikes(gameData.likesCount || 0)}</span>
+                <span class="game-dialog__likes-count">${formatLikes(gameData.likesCount || 0)}</span>
               </div>
             </div>
           </div>
 
           <p class="game-dialog__description">
-            ${gameData.description || gameData.shortDescription}
+            ${escapeHtml(description)}
           </p>
 
           <div class="game-dialog__meta-grid">
             <div class="game-dialog__meta-item">
               <span class="game-dialog__meta-label">Genre</span>
-              <span class="game-dialog__meta-value">${gameData.specs?.genre || gameData.category || 'Casual'}</span>
+              <span class="game-dialog__meta-value">${escapeHtml(gameData.specs?.genre || gameData.category || 'Casual')}</span>
             </div>
             <div class="game-dialog__meta-item">
               <span class="game-dialog__meta-label">Players</span>
-              <span class="game-dialog__meta-value">${gameData.specs?.players || '1 Player'}</span>
+              <span class="game-dialog__meta-value">${escapeHtml(gameData.specs?.players || '1 Player')}</span>
             </div>
             <div class="game-dialog__meta-item">
               <span class="game-dialog__meta-label">Duration</span>
-              <span class="game-dialog__meta-value">${gameData.specs?.duration || '15-30 mins'}</span>
+              <span class="game-dialog__meta-value">${escapeHtml(gameData.specs?.duration || '15-30 mins')}</span>
             </div>
             <div class="game-dialog__meta-item">
               <span class="game-dialog__meta-label">Price</span>
-              <span class="game-dialog__meta-value">${gameData.specs?.price || gameData.price || 'Free'}</span>
+              <span class="game-dialog__meta-value">${escapeHtml(String(gameData.specs?.price || gameData.price || 'Free'))}</span>
             </div>
           </div>
 
           <div class="game-dialog__actions">
             <button type="button" class="game-dialog__play-btn">Play Now</button>
-            <button type="button" class="game-dialog__fav-btn${gameData.isLiked ? ' game-dialog__fav-btn--active' : ''}">
+            <button
+              type="button"
+              class="game-dialog__fav-btn${isFavorited ? ' game-dialog__fav-btn--active' : ''}"
+              aria-label="${isFavorited ? 'Remove from favorites' : 'Add to favorites'}"
+              aria-pressed="${isFavorited ? 'true' : 'false'}"
+            >
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
-              <span>Add to Favorites</span>
+              <span class="game-dialog__fav-btn-text">${isFavorited ? 'Favorited' : 'Add to Favorites'}</span>
             </button>
           </div>
         </section>
@@ -306,12 +408,12 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
 
         <section class="game-dialog__section game-dialog__comments-section">
           <h3 class="game-dialog__section-title game-dialog__comments-title">Comments (...)</h3>
-          
+
           <form class="game-dialog__comment-form">
             <div class="game-dialog__avatar game-dialog__avatar--user">U</div>
-            <textarea 
-              class="game-dialog__textarea" 
-              placeholder="Write a comment..." 
+            <textarea
+              class="game-dialog__textarea"
+              placeholder="Write a comment..."
               rows="1"
               aria-label="Write a comment"
             ></textarea>
@@ -330,12 +432,12 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
       </div>
     `;
 
-    const imgEl = dialog.querySelector('.game-dialog__hero-img') as HTMLImageElement | null;
+    const imgEl = dialog.querySelector<HTMLImageElement>('.game-dialog__hero-img');
     if (imgEl) {
       imgEl.addEventListener(
         'error',
         () => {
-          imgEl.src = 'https://placehold.co/600x350/1e1e1e/ffffff?text=No+Image';
+          imgEl.src = PLACEHOLDER_IMAGE;
         },
         { once: true }
       );
@@ -343,10 +445,10 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
 
     const closeBtn = dialog.querySelector('.game-dialog__close');
     const playBtn = dialog.querySelector('.game-dialog__play-btn');
-    const favBtn = dialog.querySelector('.game-dialog__fav-btn');
+    const favBtn = dialog.querySelector<HTMLButtonElement>('.game-dialog__fav-btn');
     const commentForm = dialog.querySelector('.game-dialog__comment-form');
-    const textarea = dialog.querySelector('.game-dialog__textarea') as HTMLTextAreaElement | null;
-    const commentsContainer = dialog.querySelector('.game-dialog__comments-section') as HTMLElement | null;
+    const textarea = dialog.querySelector<HTMLTextAreaElement>('.game-dialog__textarea');
+    const commentsContainer = dialog.querySelector<HTMLElement>('.game-dialog__comments-section');
 
     closeBtn?.addEventListener('click', () => close());
 
@@ -354,8 +456,65 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
       e.preventDefault();
     });
 
-    favBtn?.addEventListener('click', () => {
-      favBtn.classList.toggle('game-dialog__fav-btn--active');
+    const heartIconSvg = `
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+      </svg>
+    `;
+
+    const updateFavButtonUI = (favorited: boolean, loading = false): void => {
+      if (!favBtn) return;
+      favBtn.classList.toggle('game-dialog__fav-btn--active', favorited);
+      favBtn.classList.toggle('game-dialog__fav-btn--loading', loading);
+      favBtn.disabled = loading;
+      favBtn.setAttribute('aria-pressed', favorited ? 'true' : 'false');
+      favBtn.setAttribute('aria-label', favorited ? 'Remove from favorites' : 'Add to favorites');
+
+      if (loading) {
+        favBtn.setAttribute('aria-busy', 'true');
+        favBtn.innerHTML = `
+          <span class="game-dialog__spinner" aria-hidden="true"></span>
+          <span class="game-dialog__fav-btn-text">Updating...</span>
+        `;
+      } else {
+        favBtn.removeAttribute('aria-busy');
+        favBtn.innerHTML = `
+          ${heartIconSvg}
+          <span class="game-dialog__fav-btn-text">${favorited ? 'Favorited' : 'Add to Favorites'}</span>
+        `;
+      }
+    };
+
+    favBtn?.addEventListener('click', async () => {
+      if (isFavPending) return;
+
+      const session = getValidAppSession();
+      if (!session) {
+        showSnackbar('Please log in to manage your favorites.', 'warning');
+        openAuthDialog('login');
+        return;
+      }
+
+      isFavPending = true;
+      updateFavButtonUI(isFavorited, true);
+
+      try {
+        const result = await toggleGameFavorite(gameSlug, session.email);
+        isFavorited = Boolean(result.isFavorited);
+        gameData.isLikedByCurrentUser = isFavorited;
+        gameData.likesCount = result.likesCount;
+
+        const likesCountEl = dialog.querySelector('.game-dialog__likes-count');
+        if (likesCountEl) {
+          likesCountEl.textContent = formatLikes(result.likesCount);
+        }
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : 'Network error updating favorites.';
+        showSnackbar(msg, 'error');
+      } finally {
+        isFavPending = false;
+        updateFavButtonUI(isFavorited, false);
+      }
     });
 
     if (textarea) {
@@ -394,7 +553,9 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
   const loadData = async (): Promise<void> => {
     renderSkeleton();
     try {
-      const data = await fetchGameDetails(gameSlug);
+      const session = getValidAppSession();
+      const data = await fetchGameDetails(gameSlug, session?.email);
+
       renderContent(data);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to load game details';
