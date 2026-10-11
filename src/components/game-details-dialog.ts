@@ -15,12 +15,12 @@ const API_BASE_URL = 'https://faxb76kxra.execute-api.eu-central-1.amazonaws.com/
 const PLACEHOLDER_IMAGE = 'https://placehold.co/600x350/1e1e1e/ffffff?text=No+Image';
 
 const AVATAR_DESIGN_TOKENS = [
-  'var(--avatar-1, #bae6fd)',
-  'var(--avatar-2, #fef08a)',
-  'var(--avatar-3, #e2e8f0)',
-  'var(--avatar-4, #e0f2fe)',
-  'var(--avatar-5, #fed7aa)',
-  'var(--avatar-6, #f7fee7)',
+  'var(--avatar-1, #f87171)',
+  'var(--avatar-2, #fbbf24)',
+  'var(--avatar-3, #34d399)',
+  'var(--avatar-4, #60a5fa)',
+  'var(--avatar-5, #a78bfa)',
+  'var(--avatar-6, #f472b6)',
 ];
 
 const IMAGE_KEYS = [
@@ -164,6 +164,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
   let isClosing = false;
   let isFavPending = false;
   let isCommentPending = false;
+  const pendingLikes = new Set<string>();
 
   const handleAuthStateChanged = (): void => {
     if (document.body.contains(backdrop) && !isClosing) {
@@ -183,7 +184,6 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
     for (let i = 0; i < trimmedName.length; i++) {
       hash = trimmedName.charCodeAt(i) + ((hash << 5) - hash);
     }
-    
     const index = (hash >>> 0) % AVATAR_DESIGN_TOKENS.length;
     const assignedColor = AVATAR_DESIGN_TOKENS[index];
 
@@ -276,7 +276,9 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
     }
 
     listEl.innerHTML = comments
-      .map((comment) => {
+      .map((comment, index) => {
+        const commentRecord = comment as unknown as Record<string, unknown>;
+        const commentId = String(commentRecord.id || commentRecord._id || commentRecord.commentId || index);
         const authorName = comment.author || comment.authorName || comment.userName || 'Anonymous';
         const trimmedAuthor = authorName.trim();
         const initial = escapeHtml(trimmedAuthor ? trimmedAuthor.charAt(0).toUpperCase() : 'A');
@@ -291,7 +293,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
         const strokeColor = isLiked ? '#ff4b4b' : '#18152e';
 
         return `
-          <li class="game-dialog__comment-item">
+          <li class="game-dialog__comment-item" data-comment-id="${escapeHtml(commentId)}">
             <article class="game-dialog__comment">
               <div class="game-dialog__comment-header">
                 <div class="game-dialog__comment-author">
@@ -303,17 +305,85 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
                 <span class="game-dialog__comment-time">${escapeHtml(displayTime)}</span>
               </div>
               <p class="game-dialog__comment-text">${escapeHtml(text)}</p>
-              <button type="button" class="game-dialog__like-btn${isLiked ? ' game-dialog__like-btn--active' : ''}">
+              <button type="button" class="game-dialog__like-btn${isLiked ? ' game-dialog__like-btn--active' : ''}" aria-pressed="${isLiked ? 'true' : 'false'}">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="${strokeColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
-                <span>${likes}</span>
+                <span class="game-dialog__likes-count">${likes}</span>
               </button>
             </article>
           </li>
         `;
       })
       .join('');
+
+    // Obsługa polubień komentarzy (Task RSS-QS-4-2-4)
+    const likeButtons = listEl.querySelectorAll<HTMLButtonElement>('.game-dialog__like-btn');
+    likeButtons.forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const liItem = btn.closest('.game-dialog__comment-item');
+        const commentId = liItem?.getAttribute('data-comment-id');
+        if (!commentId || pendingLikes.has(commentId)) return;
+
+        const activeSession = getValidAppSession();
+        if (!activeSession) {
+          showSnackbar('Please log in to like comments.', 'warning');
+          openAuthDialog('login');
+          return;
+        }
+
+        pendingLikes.add(commentId);
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/comments/${commentId}/like`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userEmail: activeSession.email,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to update comment like.');
+          }
+
+          const jsonRes = await response.json();
+          const resData = (jsonRes.data || jsonRes) as {
+            isLikedByCurrentUser?: boolean;
+            isLiked?: boolean;
+            likesCount?: number;
+            likes?: number;
+          };
+
+          const isLikedNow = Boolean(resData.isLikedByCurrentUser ?? resData.isLiked);
+          const newLikesCount = resData.likesCount ?? resData.likes ?? 0;
+
+          btn.classList.toggle('game-dialog__like-btn--active', isLikedNow);
+          btn.setAttribute('aria-pressed', isLikedNow ? 'true' : 'false');
+
+          const svgEl = btn.querySelector('svg');
+          if (svgEl) {
+            svgEl.setAttribute('stroke', isLikedNow ? '#ff4b4b' : '#18152e');
+          }
+
+          const countSpan = btn.querySelector('.game-dialog__likes-count');
+          if (countSpan) {
+            countSpan.textContent = String(newLikesCount);
+          }
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : 'Network error updating like.';
+          showSnackbar(msg, 'error');
+        } finally {
+          pendingLikes.delete(commentId);
+          btn.disabled = false;
+          btn.style.opacity = '1';
+        }
+      });
+    });
   };
 
   const renderContent = (gameData: GameDetails): void => {
