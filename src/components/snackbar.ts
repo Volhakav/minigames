@@ -38,3 +38,14 @@ export const showSnackbar = (message: string, variant: SnackbarVariant = 'info')
 
   setTimeout(removeSnackbar, 4000);
 };
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('show-snackbar', ((
+    event: CustomEvent<{ message?: string; type?: SnackbarVariant; variant?: SnackbarVariant }>
+  ) => {
+    const detail = event.detail;
+    if (detail?.message) {
+      showSnackbar(detail.message, detail.variant || detail.type || 'info');
+    }
+  }) as EventListener);
+}

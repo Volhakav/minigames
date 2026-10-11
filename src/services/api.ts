@@ -70,6 +70,7 @@ export interface GameDetails {
   rating: number;
   likesCount: number;
   isLiked?: boolean;
+  isLikedByCurrentUser?: boolean;
   cardImage: string;
   heroImage?: string;
   galleryImages?: string[];
@@ -235,6 +236,7 @@ export const fetchGameDetails = async (gameSlug: string, userEmail?: string): Pr
     rating: (game.rating as number) || 0,
     likesCount: (game.likesCount as number) || 0,
     isLiked: Boolean(game.isLiked || game.isLikedByCurrentUser),
+    isLikedByCurrentUser: Boolean(game.isLikedByCurrentUser ?? game.isLiked),
     cardImage: resolveApiImageUrl(rawCardImage),
     heroImage: resolveApiImageUrl(rawHeroImage),
     galleryImages: Array.isArray(game.galleryImages)
@@ -251,6 +253,37 @@ export const fetchGameDetails = async (gameSlug: string, userEmail?: string): Pr
       duration: '15-30 mins',
       price: (game.price as string) || 'Free',
     },
+  };
+};
+
+export interface ToggleFavoriteResponse {
+  gameSlug: string;
+  isFavorited: boolean;
+  likesCount: number;
+}
+
+export const toggleGameFavorite = async (
+  gameSlug: string,
+  userEmail: string
+): Promise<ToggleFavoriteResponse> => {
+  const response = await fetch(`${API_BASE_URL}/api/games/${gameSlug}/favorite`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ userEmail }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to update favorite status (Status: ${response.status})`);
+  }
+
+  const result = await response.json();
+  const data = result.data || result;
+  return {
+    gameSlug: (data.gameSlug as string) || gameSlug,
+    isFavorited: Boolean(data.isFavorited),
+    likesCount: Number(data.likesCount ?? 0),
   };
 };
 
