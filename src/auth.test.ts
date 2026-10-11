@@ -10,13 +10,13 @@ vi.mock('firebase/auth', () => ({
   GoogleAuthProvider: vi.fn(),
   getAuth: vi.fn(() => ({})),
   signInWithPopup: vi.fn(async () => ({
-    user: { email: 'google@rs.school', displayName: 'Google User', photoURL: null },
+    user: { email: 'google@rs.school', displayName: 'Google User', photoURL: undefined },
   })),
   signInWithEmailAndPassword: vi.fn(async (_, email) => ({
-    user: { email, displayName: 'Test User', photoURL: null },
+    user: { email, displayName: 'Test User', photoURL: undefined },
   })),
   createUserWithEmailAndPassword: vi.fn(async (_, email) => ({
-    user: { email, displayName: 'New User', photoURL: null },
+    user: { email, displayName: 'New User', photoURL: undefined },
   })),
   updateProfile: vi.fn(async () => {}),
 }));

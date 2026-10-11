@@ -1,5 +1,4 @@
 import {
-  fetchGameComments,
   fetchGameDetails,
   GameDetails,
   GameRecord,
@@ -182,7 +181,8 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
 
     let hash = 0;
     for (let i = 0; i < trimmedName.length; i++) {
-      hash = trimmedName.charCodeAt(i) + ((hash << 5) - hash);
+      const code = trimmedName.codePointAt(i) ?? 0;
+      hash = code + ((hash << 5) - hash);
     }
     const index = (hash >>> 0) % AVATAR_DESIGN_TOKENS.length;
     const assignedColor = AVATAR_DESIGN_TOKENS[index];
@@ -317,9 +317,8 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
       })
       .join('');
 
-    // Obsługa polubień komentarzy (Task RSS-QS-4-2-4)
     const likeButtons = listEl.querySelectorAll<HTMLButtonElement>('.game-dialog__like-btn');
-    likeButtons.forEach((btn) => {
+    for (const btn of likeButtons) {
       btn.addEventListener('click', async () => {
         const liItem = btn.closest('.game-dialog__comment-item');
         const commentId = liItem?.getAttribute('data-comment-id');
@@ -383,7 +382,7 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
           btn.style.opacity = '1';
         }
       });
-    });
+    }
   };
 
   const renderContent = (gameData: GameDetails): void => {
@@ -511,9 +510,9 @@ export const createGameDetailsDialog = (gameSlug: string): HTMLElement => {
               placeholder="${session ? 'Write a comment...' : 'Please log in to comment'}"
               rows="1"
               aria-label="Write a comment"
-              ${!session ? 'disabled' : ''}
+              ${session ? '' : 'disabled'}
             ></textarea>
-            <button type="submit" class="game-dialog__send-btn" aria-label="Send comment" ${!session ? 'disabled' : ''}>
+            <button type="submit" class="game-dialog__send-btn" aria-label="Send comment" ${session ? '' : 'disabled'}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>

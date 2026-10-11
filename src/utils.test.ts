@@ -3,7 +3,7 @@ import { formatRelativeTime } from './components/game-details-dialog';
 
 describe('Game Details Utilities - formatRelativeTime', () => {
   it('should return "just now" for undefined or empty dates', () => {
-    expect(formatRelativeTime(undefined)).toBe('just now');
+    expect(formatRelativeTime()).toBe('just now');
     expect(formatRelativeTime('')).toBe('just now');
   });
 
